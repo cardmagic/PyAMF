@@ -1781,7 +1781,7 @@ def encode(*args, **kwargs):
 def encode_int(n):
     """
     Encodes an int as a variable length unsigned 29-bit integer as defined by
-    http://download.macromedia.com/pub/labs/amf/amf3_spec_121207.pdf
+    the spec.
 
     @param n: The integer to be encoded
     @return: The encoded string
