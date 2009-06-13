@@ -1,6 +1,12 @@
 # Copyright (c) 2007-2009 The PyAMF Project.
 # See LICENSE for details.
 
+"""
+C-extension for L{pyamf.util} Python module in L{PyAMF<pyamf>}.
+
+@since: 0.4
+"""
+
 cdef extern from "stdlib.h":
     ctypedef unsigned long size_t
 
@@ -70,18 +76,112 @@ DEF ENDIAN_BIG = ">"
 cdef char SYSTEM_ENDIAN
 
 cdef int float_broken = -1
-cdef double PosInf = <double>0x7ff0000000000000
-cdef double NegInf = <double>0xfff0000000000000 
-cdef double NaN = <double>0x7ff8000000000000
-cdef double system_nan = <double>0x7ff8000000000000
-cdef double system_posinf = <double>0x7ff0000000000000
-cdef double system_neginf = <double>0xfff0000000000000
-
 cdef int complete_init = 0
 
+cdef unsigned char *NaN = <unsigned char *>'\xff\xf8\x00\x00\x00\x00\x00\x00'
+cdef unsigned char *NegInf = <unsigned char *>'\xff\xf0\x00\x00\x00\x00\x00\x00'
+cdef unsigned char *PosInf = <unsigned char *>'\x7f\xf0\x00\x00\x00\x00\x00\x00'
+
+cdef double system_nan
+cdef double system_posinf
+cdef double system_neginf
+
+cdef double platform_nan
+cdef double platform_posinf
+cdef double platform_neginf
+
+cdef object pyamf_NaN
+cdef object pyamf_NegInf
+cdef object pyamf_PosInf
+
+
+cdef int dump(void *p, int size):
+    cdef int i
+    cdef unsigned char *buf
+
+    buf = <unsigned char *>p
+
+    for i from 0 <= i < size:
+        print buf[i]
+
+
+cdef int build_platform_exceptional_floats() except? -1:
+    global platform_nan, platform_posinf, platform_neginf
+    global system_nan, system_posinf, system_neginf
+
+    cdef unsigned char *buf = <unsigned char *>PyMem_Malloc(sizeof(unsigned char *) * sizeof(double))
+
+    if buf == NULL:
+        raise MemoryError
+
+    memcpy(buf, NaN, 8)
+
+    if not is_big_endian(SYSTEM_ENDIAN):
+        swap_bytes(buf, 8)
+
+    memcpy(&system_nan, buf, 8)
+
+    memcpy(buf, NegInf, 8)
+
+    if not is_big_endian(SYSTEM_ENDIAN):
+        swap_bytes(buf, 8)
+
+    memcpy(&system_neginf, buf, 8)
+
+    memcpy(buf, PosInf, 8)
+
+    if not is_big_endian(SYSTEM_ENDIAN):
+        swap_bytes(buf, 8)
+
+    memcpy(&system_posinf, buf, 8)
+
+    if float_broken == 1:
+        if _PyFloat_Unpack8(<unsigned char *>&NaN, not is_big_endian(SYSTEM_ENDIAN)) == -1:
+            PyMem_Free(buf)
+
+            return -1
+
+        memcpy(&platform_nan, buf, 8)
+
+        if _PyFloat_Unpack8(<unsigned char *>&PosInf, not is_big_endian(SYSTEM_ENDIAN)) == -1:
+            PyMem_Free(buf)
+
+            return -1
+
+        memcpy(&platform_posinf, buf, 8)
+
+        if _PyFloat_Unpack8(<unsigned char *>&NegInf, not is_big_endian(SYSTEM_ENDIAN)) == -1:
+            PyMem_Free(buf)
+
+            return -1
+
+        memcpy(&platform_neginf, buf, 8)
+
+    PyMem_Free(buf)
+
+
 cdef int complete_import() except? -1:
-    # this will be filled out later ..
+    """
+    This function is internal - do not call it yourself. It is used to
+    finalise the cpyamf.util module to improve startup time.
+    """
+    global complete_init, float_broken
+    global pyamf_NaN, pyamf_NegInf, pyamf_PosInf
+
     complete_init = 1
+
+    SYSTEM_ENDIAN = get_native_endian()
+
+    if is_broken_float():
+        float_broken = 1
+
+    build_platform_exceptional_floats()
+
+    from pyamf import util
+
+    pyamf_NaN = util.NaN
+    pyamf_NegInf = util.NegInf
+    pyamf_PosInf = util.PosInf
 
     return 0
 
@@ -139,12 +239,17 @@ cdef inline int swap_bytes(unsigned char *buffer, Py_ssize_t size) except? -1:
 
 
 cdef int is_broken_float() except? -1:
-    cdef double test = _PyFloat_Unpack8(<unsigned char *>&NaN, not is_big_endian(SYSTEM_ENDIAN))
+    cdef double test = _PyFloat_Unpack8(NaN, 0)
 
-    if test == -1.0 and PyErr_Occurred() != NULL:
-        return -1
+    cdef int result
+    cdef unsigned char *buf = <unsigned char *>&test
 
-    return memcmp(&NaN, <unsigned char *>&test, 8) != 0
+    if is_big_endian(SYSTEM_ENDIAN):
+        swap_bytes(buf, 8)
+
+    result = memcmp(NaN, buf, 8)
+
+    return result != 0
 
 
 cdef class cBufferedByteStream:
@@ -181,6 +286,9 @@ cdef class cBufferedByteStream:
         return 0
 
     cdef inline Py_ssize_t tell(self) except? -1:
+        """
+        Returns the position of the stream pointer.
+        """
         return self.pos
 
     cdef int _increase_buffer(self, Py_ssize_t size) except? -1:
@@ -201,6 +309,9 @@ cdef class cBufferedByteStream:
         return 0
 
     cdef int write(self, char *buf, Py_ssize_t size) except? -1:
+        """
+        Writes the content of the specified C{buf} into this buffer.
+        """
         if self.complain_if_closed() == -1:
             return -1
 
@@ -235,6 +346,10 @@ cdef class cBufferedByteStream:
         return 0
 
     cdef int read(self, char **buf, Py_ssize_t size) except? -1:
+        """
+        Reads up to the specified number of bytes from the stream into
+        the specified byte array of specified length.
+        """
         if self.complain_if_closed() == -1:
             return -1
 
@@ -260,20 +375,35 @@ cdef class cBufferedByteStream:
         return 0
 
     cdef inline int at_eof(self) except? -1:
+        """
+        Returns C{True} if the internal pointer is at the end of the stream.
+
+        @rtype: C{bool}
+        """
         if self.complain_if_closed() == -1:
             return -1
 
         return self.length == self.pos
 
     cdef inline Py_ssize_t remaining(self) except? -1:
+        """
+        Returns number of remaining bytes.
+        """
         if self.complain_if_closed() == -1:
             return -1
 
         return self.length - self.pos
 
     cdef int seek(self, Py_ssize_t pos, int mode=0) except? -1:
-        # mode 0: absolute; 1: relative; 2: relative to EOF
+        """
+        Sets the file-pointer offset, measured from the beginning of this stream,
+        at which the next write operation will occur.
 
+        @param pos:
+        @type pos: C{int}
+        @param mode: mode 0: absolute; 1: relative; 2: relative to EOF
+        @type mode: C{int}
+        """
         if self.complain_if_closed() == -1:
             return -1
 
@@ -298,12 +428,19 @@ cdef class cBufferedByteStream:
         return 0
 
     cdef object getvalue(self):
+        """
+        Get raw data from buffer.
+        """
         if self.complain_if_closed() == -1:
             return None
 
         return PyString_FromStringAndSize(self.buffer, self.length)
 
     cdef int peek(self, char **buf, Py_ssize_t size) except? -1:
+        """
+        Looks C{size} bytes ahead in the stream, returning what it finds,
+        returning the stream pointer to its initial position.
+        """
         if self.complain_if_closed() == -1:
             return -1
 
@@ -317,6 +454,12 @@ cdef class cBufferedByteStream:
         return 0
 
     cdef int truncate(self, Py_ssize_t size) except? -1:
+        """
+        Truncates the stream to the specified length.
+
+        @param size: The length of the stream, in bytes.
+        @type size: C{int}
+        """
         if self.complain_if_closed() == -1:
             return -1
 
@@ -368,6 +511,10 @@ cdef class cBufferedByteStream:
         return 0
 
     cdef int consume(self) except? -1:
+        """
+        Chops the tail off the stream starting at 0 and ending at C{tell()}.
+        The stream pointer is set to 0 at the end of this function.
+        """
         if self.complain_if_closed() == -1:
             return -1
 
@@ -457,6 +604,11 @@ cdef class cBufferedByteStream:
         return 0
 
     cdef int pack_int(self, int num_bytes, long x) except? -1:
+        """
+        Packs a long.
+
+        @raise OverflowError: integer out of range
+        """
         cdef long maxint = 1
         cdef long minint = -1
 
@@ -493,6 +645,8 @@ cdef class cBufferedByteStream:
     cdef int pack_uint(self, int num_bytes, unsigned long x) except? -1:
         """
         Packs an unsigned long into a buffer.
+
+        @raise OverflowError: integer out of range
         """
         cdef unsigned long maxint = 1
 
@@ -526,54 +680,131 @@ cdef class cBufferedByteStream:
         return 0
 
     cdef int read_uchar(self, unsigned char *ret) except? -1:
+        """
+        Reads an C{unsigned char} from the stream.
+        """
         return self.unpack_uint(1, <unsigned long *>ret)
 
     cdef int read_char(self, char *ret) except? -1:
+        """
+        Reads a C{char} from the stream.
+        """
         return self.unpack_int(1, <long *>ret)
 
     cdef int read_ushort(self, unsigned short *ret) except? -1:
+        """
+        Reads a 2 byte unsigned integer from the stream.
+        """
         return self.unpack_uint(2, <unsigned long *>ret)
 
     cdef int read_short(self, short *ret) except? -1:
+        """
+        Reads a 2 byte integer from the stream.
+        """
         return self.unpack_int(2, <long *>ret)
 
     cdef int read_ulong(self, unsigned long *ret) except? -1:
+        """
+        Reads a 4 byte unsigned integer from the stream.
+        """
         return self.unpack_uint(4, ret)
 
     cdef int read_long(self, long *ret) except? -1:
+        """
+        Reads a 4 byte integer from the stream.
+        """
         return self.unpack_int(4, ret)
 
     cdef int read_24bit_uint(self, unsigned long *ret) except? -1:
+        """
+        Reads a 24 bit unsigned integer from the stream.
+        """
         return self.unpack_uint(3, <unsigned long *>ret)
 
     cdef int read_24bit_int(self, long *ret) except? -1:
+        """
+        Reads a 24 bit integer from the stream.
+        """
         return self.unpack_int(3, <long *>ret)
 
     cdef int write_uchar(self, unsigned char ret) except? -1:
+        """
+        Writes an C{unsigned char} to the stream.
+
+        @param ret: Unsigned char
+        @type ret: C{int}
+        """
         return self.pack_uint(1, <unsigned long>ret)
 
     cdef int write_char(self, char ret) except? -1:
+        """
+        Write a C{char} to the stream.
+
+        @param ret: char
+        @type ret: C{int}
+        """
         return self.pack_int(1, <long>ret)
 
     cdef int write_ushort(self, unsigned short ret) except? -1:
+        """
+        Writes a 2 byte unsigned integer to the stream.
+
+        @param ret: 2 byte unsigned integer
+        @type ret: C{int}
+        """
         return self.pack_uint(2, <unsigned long>ret)
 
     cdef int write_short(self, short ret) except? -1:
+        """
+        Writes a 2 byte integer to the stream.
+
+        @param ret: 2 byte integer
+        @type ret: C{int}
+        """
         return self.pack_int(2, <long>ret)
 
     cdef int write_ulong(self, unsigned long ret) except? -1:
+        """
+        Writes a 4 byte unsigned integer to the stream.
+
+        @param ret: 4 byte unsigned integer
+        @type ret: C{int}
+        """
         return self.pack_uint(4, ret)
 
     cdef int write_long(self, long ret) except? -1:
+        """
+        Writes a 4 byte integer to the stream.
+
+        @param ret: 4 byte integer
+        @type ret: C{int}
+        """
         return self.pack_int(4, ret)
 
     cdef int write_24bit_uint(self, unsigned long ret) except? -1:
+        """
+        Writes a 24 bit unsigned integer to the stream.
+
+        @param ret: 24 bit unsigned integer
+        @type ret: C{int}
+        """
         return self.pack_uint(3, ret)
 
     cdef int write_24bit_int(self, long ret) except? -1:
+        """
+        Writes a 24 bit integer to the stream.
+
+        @param ret: 24 bit integer
+        @type ret: C{int}
+        """
         return self.pack_int(3, ret)
 
     cdef object read_utf8_string(self, unsigned int l):
+        """
+        Reads a UTF-8 string from the stream.
+
+        @rtype: C{unicode}
+        """
         cdef char* buf = NULL
         cdef object ret
 
@@ -592,6 +823,12 @@ cdef class cBufferedByteStream:
         return ret
 
     cdef int write_utf8_string(self, object obj) except? -1:
+        """
+        Writes a unicode object to the stream in UTF-8.
+
+        @param obj: unicode object
+        @raise TypeError: Unexpected type for str C{u}.
+        """
         cdef object encoded_string
         cdef char *buf = NULL
         cdef Py_ssize_t l = -1
@@ -615,42 +852,65 @@ cdef class cBufferedByteStream:
         return 0
 
     cdef int read_double(self, double *obj) except? -1:
-        cdef char *buf = NULL
+        """
+        Reads an 8 byte float from the stream.
+        """
+        cdef unsigned char *buf = NULL
         cdef int done = 0
 
-        if self.read(&buf, 8) == -1:
+        if self.read(<char **>&buf, 8) == -1:
             if buf != NULL:
                 PyMem_Free(buf)
 
             return -1
 
-        if float_broken:
-            if not is_native_endian(self._endian):
-                swap_bytes(<unsigned char *>buf, 8)
+        if float_broken == 1:
+            if is_big_endian(SYSTEM_ENDIAN):
+                if not is_big_endian(self._endian):
+                    swap_bytes(buf, 8)
+            else:
+                if is_big_endian(self._endian):
+                    swap_bytes(buf, 8)
 
-            if memcmp(buf, &NaN, 8) == 0:
-                memcpy(obj, &NaN, 8)
+            if memcmp(buf, &system_nan, 8) == 0:
+                memcpy(obj, &system_nan, 8)
+
                 done = 1
-            elif memcmp(obj, &PosInf, 8) == 0:
-                memcpy(obj, &PosInf, 8)
+            elif memcmp(buf, &system_posinf, 8) == 0:
+                memcpy(obj, &system_posinf, 8)
+
                 done = 1
-            elif memcmp(obj, &NegInf, 8) == 0:
-                memcpy(obj, &NegInf, 8)
+            elif memcmp(buf, &system_neginf, 8) == 0:
+                memcpy(obj, &system_neginf, 8)
+
                 done = 1
 
             if done == 1:
+                PyMem_Free(buf)
+
                 return 0
 
-            if not is_native_endian(self._endian):
-                swap_bytes(<unsigned char *>buf, 8)
+            if is_big_endian(SYSTEM_ENDIAN):
+                if not is_big_endian(self._endian):
+                    swap_bytes(buf, 8)
+            else:
+                if is_big_endian(self._endian):
+                    swap_bytes(buf, 8)
 
-        obj[0] = _PyFloat_Unpack8(<unsigned char *>buf, not is_big_endian(self._endian))
+        obj[0] = _PyFloat_Unpack8(buf, not is_big_endian(self._endian))
         PyMem_Free(buf)
 
         return 0
 
     cdef int write_double(self, double val) except? -1:
+        """
+        Writes an 8 byte float to the stream.
+
+        @param val: 8 byte float
+        @type val: C{float}
+        """
         cdef unsigned char *buf
+        cdef unsigned char *foo
         cdef int done = 0
 
         buf = <unsigned char *>PyMem_Malloc(sizeof(unsigned char *) * 8)
@@ -658,19 +918,27 @@ cdef class cBufferedByteStream:
         if buf == NULL:
             raise MemoryError
 
-        if float_broken:
+        if float_broken == 1:
             if memcmp(&val, &system_nan, 8) == 0:
-                memcpy(buf, &NaN, 8)
-                done = 1
-            elif memcmp(&val, &system_neginf, 8) == 0:
-                memcpy(buf, &NegInf, 8)
+                memcpy(buf, &val, 8)
+
                 done = 1
             elif memcmp(&val, &system_posinf, 8) == 0:
-                memcpy(buf, &PosInf, 8)
+                memcpy(buf, &val, 8)
+
+                done = 1
+            elif memcmp(&val, &system_neginf, 8) == 0:
+                memcpy(buf, &val, 8)
+
                 done = 1
 
-            if done == 1 and not is_big_endian(self._endian):
-                swap_bytes(<unsigned char *>buf, 8)
+            if done == 1:
+                if is_big_endian(SYSTEM_ENDIAN):
+                    if not is_big_endian(self._endian):
+                        swap_bytes(buf, 8)
+                else:
+                    if is_big_endian(self._endian):
+                        swap_bytes(buf, 8)
 
         if done == 0:
             if _PyFloat_Pack8(val, <unsigned char *>buf, not is_big_endian(self._endian)) == -1:
@@ -679,6 +947,8 @@ cdef class cBufferedByteStream:
                 return -1
 
         if self.write(<char *>buf, 8) == -1:
+            PyMem_Free(buf)
+
             return -1
 
         PyMem_Free(buf)
@@ -686,6 +956,9 @@ cdef class cBufferedByteStream:
         return 0
 
     cdef int read_float(self, float *x):
+        """
+        Reads a 4 byte float from the stream.
+        """
         cdef char *buf = NULL
         cdef unsigned char le = 0
 
@@ -704,6 +977,12 @@ cdef class cBufferedByteStream:
         return 0
 
     cdef int write_float(self, float c):
+        """
+        Writes a 4 byte float to the stream.
+
+        @param c: 4 byte float
+        @type c: C{float}
+        """
         cdef unsigned char *buf
         cdef unsigned char le = 1
 
@@ -727,10 +1006,30 @@ cdef class cBufferedByteStream:
 
         return 0
 
+    cdef int append(self, object obj) except? -1:
+        cdef int i = self.pos
+
+        self.pos = self.length
+
+        if hasattr(obj, 'getvalue'):
+            self.write_utf8_string(obj.getvalue())
+        else:
+            self.write_utf8_string(obj)
+
+        self.pos = i
+
 
 cdef class BufferedByteStream(cBufferedByteStream):
+    """
+    An extension of C{StringIO}.
+
+    @see: L{BufferedByteStream<pyamf.util.BufferedByteStream>}
+    """
 
     def __init__(self, buf=None):
+        """
+        @raise TypeError: Unable to coerce buf -> StringIO
+        """
         cdef Py_ssize_t i
         cdef cBufferedByteStream x
 
@@ -767,6 +1066,9 @@ cdef class BufferedByteStream(cBufferedByteStream):
             return PyString_FromStringAndSize(&self._endian, 1)
 
     def read(self, size=-1):
+        """
+        Reads C{size} bytes from the stream.
+        """
         cdef Py_ssize_t s
         cdef object cls
 
@@ -788,9 +1090,18 @@ cdef class BufferedByteStream(cBufferedByteStream):
         return r
 
     def write(self, x):
+        """
+        Writes the content of the specified C{x} into this buffer.
+
+        @param x:
+        @type x:
+        """
         cBufferedByteStream.write_utf8_string(self, x)
 
     def close(self):
+        """
+        Close the stream.
+        """
         cBufferedByteStream.close(self)
 
     def flush(self):
@@ -798,26 +1109,62 @@ cdef class BufferedByteStream(cBufferedByteStream):
         pass
 
     def tell(self):
+        """
+        Returns the position of the stream pointer.
+        """
         return self.pos
 
     def remaining(self):
+        """
+        Returns number of remaining bytes.
+
+        @rtype: C{number}
+        @return: Number of remaining bytes.
+        """
         return cBufferedByteStream.remaining(self)
 
     def __len__(self):
         return self.length
 
     def getvalue(self):
+        """
+        Get raw data from buffer.
+        """
         return cBufferedByteStream.getvalue(self)
 
     def at_eof(self):
+        """
+        Returns C{True} if the internal pointer is at the end of the stream.
+
+        @rtype: C{bool}
+        """
         cdef int result = cBufferedByteStream.at_eof(self)
 
         return (result == 1)
 
     def seek(self, pos, mode=0):
+        """
+        Sets the file-pointer offset, measured from the beginning of this stream,
+        at which the next write operation will occur.
+
+        @param pos:
+        @type pos: C{int}
+        @param mode:
+        @type mode: C{int}
+        """
         cBufferedByteStream.seek(self, pos, mode)
 
     def peek(self, size=1):
+        """
+        Looks C{size} bytes ahead in the stream, returning what it finds,
+        returning the stream pointer to its initial position.
+
+        @param size: Default is 1.
+        @type size: C{int}
+
+        @rtype:
+        @return: Bytes.
+        """
         cdef char *buf = NULL
         cdef Py_ssize_t l
 
@@ -834,12 +1181,25 @@ cdef class BufferedByteStream(cBufferedByteStream):
         return r
 
     def truncate(self, int size=0):
+        """
+        Truncates the stream to the specified length.
+
+        @param size: The length of the stream, in bytes.
+        @type size: C{int}
+        """
         cBufferedByteStream.truncate(self, size)
 
     def consume(self):
+        """
+        Chops the tail off the stream starting at 0 and ending at C{tell()}.
+        The stream pointer is set to 0 at the end of this function.
+        """
         cBufferedByteStream.consume(self)
 
     def read_uchar(self):
+        """
+        Reads an C{unsigned char} from the stream.
+        """
         cdef unsigned char *i = NULL
         cdef object ret
 
@@ -856,6 +1216,9 @@ cdef class BufferedByteStream(cBufferedByteStream):
         return ret
 
     def read_char(self):
+        """
+        Reads a C{char} from the stream.
+        """
         cdef char *i = NULL
         cdef object ret
 
@@ -872,6 +1235,9 @@ cdef class BufferedByteStream(cBufferedByteStream):
         return ret
 
     def read_ushort(self):
+        """
+        Reads a 2 byte unsigned integer from the stream.
+        """
         cdef unsigned short *i = NULL
         cdef object ret
 
@@ -888,6 +1254,9 @@ cdef class BufferedByteStream(cBufferedByteStream):
         return ret
 
     def read_short(self):
+        """
+        Reads a 2 byte integer from the stream.
+        """
         cdef short *i = NULL
         cdef object ret
 
@@ -904,6 +1273,9 @@ cdef class BufferedByteStream(cBufferedByteStream):
         return ret
 
     def read_ulong(self):
+        """
+        Reads a 4 byte unsigned integer from the stream.
+        """
         cdef unsigned long *i = NULL
         cdef object ret
 
@@ -920,6 +1292,9 @@ cdef class BufferedByteStream(cBufferedByteStream):
         return ret
 
     def read_long(self):
+        """
+        Reads a 4 byte integer from the stream.
+        """
         cdef long *i = NULL
         cdef object ret
 
@@ -936,6 +1311,9 @@ cdef class BufferedByteStream(cBufferedByteStream):
         return ret
 
     def read_24bit_uint(self):
+        """
+        Reads a 24 bit unsigned integer from the stream.
+        """
         cdef unsigned long *i = NULL
         cdef object ret
 
@@ -952,6 +1330,9 @@ cdef class BufferedByteStream(cBufferedByteStream):
         return ret
 
     def read_24bit_int(self):
+        """
+        Reads a 24 bit integer from the stream.
+        """
         cdef long *i = NULL
         cdef object ret
 
@@ -968,32 +1349,67 @@ cdef class BufferedByteStream(cBufferedByteStream):
         return ret
 
     def write_uchar(self, x):
+        """
+        Writes an C{unsigned char} to the stream.
+
+        @param x: Unsigned char
+        @type x: C{int}
+        @raise TypeError: Unexpected type for int C{x}.
+        """
         if PyInt_Check(x) == 0 and PyLong_Check(x) == 0:
-            raise TypeError('expected int for val')
+            raise TypeError('expected int for x')
 
         cBufferedByteStream.write_uchar(self, <unsigned char>x)
 
     def write_char(self, x):
+        """
+        Write a C{char} to the stream.
+
+        @param x: char
+        @type x: C{int}
+        @raise TypeError: Unexpected type for int C{x}.
+        """
         if PyInt_Check(x) == 0 and PyLong_Check(x) == 0:
-            raise TypeError('expected int for val')
+            raise TypeError('expected int for x')
 
         cBufferedByteStream.write_char(self, <char>x)
 
     def write_ushort(self, x):
+        """
+        Writes a 2 byte unsigned integer to the stream.
+
+        @param x: 2 byte unsigned integer
+        @type x: C{int}
+        @raise TypeError: Unexpected type for int C{x}.
+        """
         if PyInt_Check(x) == 0 and PyLong_Check(x) == 0:
-            raise TypeError('expected int for val')
+            raise TypeError('expected int for x')
 
         cBufferedByteStream.write_ushort(self, <unsigned short>x)
 
     def write_short(self, x):
+        """
+        Writes a 2 byte integer to the stream.
+
+        @param x: 2 byte integer
+        @type x: C{int}
+        @raise TypeError: Unexpected type for int C{x}.
+        """
         if PyInt_Check(x) == 0 and PyLong_Check(x) == 0:
-            raise TypeError('expected int for val')
+            raise TypeError('expected int for x')
 
         cBufferedByteStream.write_short(self, <short>x)
 
     def write_ulong(self, x):
+        """
+        Writes a 4 byte unsigned integer to the stream.
+
+        @param x: 4 byte unsigned integer
+        @type x: C{int}
+        @raise TypeError: Unexpected type for int C{x}.
+        """
         if PyInt_Check(x) == 0 and PyLong_Check(x) == 0:
-            raise TypeError('expected int for val')
+            raise TypeError('expected int for x')
 
         if x > 4294967295L or x < 0:
             raise OverflowError
@@ -1001,66 +1417,106 @@ cdef class BufferedByteStream(cBufferedByteStream):
         cBufferedByteStream.write_ulong(self, <unsigned long>x)
 
     def write_long(self, long x):
+        """
+        Writes a 4 byte integer to the stream.
+
+        @param x: 4 byte integer
+        @type x: C{int}
+        """
         cBufferedByteStream.write_long(self, x)
 
     def write_24bit_uint(self, unsigned long x):
+        """
+        Writes a 24 bit unsigned integer to the stream.
+
+        @param x: 24 bit unsigned integer
+        @type x: C{int}
+        """
         cBufferedByteStream.write_24bit_uint(self, x)
 
     def write_24bit_int(self, long x):
+        """
+        Writes a 24 bit integer to the stream.
+
+        @param x: 24 bit integer
+        @type x: C{int}
+        """
         cBufferedByteStream.write_24bit_int(self, x)
 
     def read_utf8_string(self, unsigned int size):
+        """
+        Reads a UTF-8 string from the stream.
+
+        @rtype: C{unicode}
+        """
         return cBufferedByteStream.read_utf8_string(self, size)
 
     def write_utf8_string(self, obj):
+        """
+        Writes a unicode object to the stream in UTF-8.
+
+        @param obj: unicode object
+        """
         cBufferedByteStream.write_utf8_string(self, obj)
 
     def read_double(self):
+        """
+        Reads an 8 byte float from the stream.
+        """
         cdef double x
 
         if cBufferedByteStream.read_double(self, &x) == -1:
             return
 
-        if float_broken:
-            if memcmp(&x, &NaN, 8) == 0:
-                return NaN
-            elif memcmp(&x, &NegInf, 8) == 0:
-                return NegInf
-            elif memcmp(&x, &PosInf, 8) == 0:
-                return PosInf
+        if float_broken == 1:
+            if memcmp(&x, &system_nan, 8) == 0:
+                return pyamf_NaN
+            elif memcmp(&x, &system_neginf, 8) == 0:
+                return pyamf_NegInf
+            elif memcmp(&x, &system_posinf, 8) == 0:
+                return pyamf_PosInf
 
         return PyFloat_FromDouble(x)
 
     def write_double(self, val):
+        """
+        Writes an 8 byte float to the stream.
+
+        @param val: 8 byte float
+        @type val: C{float}
+        @raise TypeError: Unexpected type for float C{val}.
+        """
         if PyFloat_Check(val) == 0:
             raise TypeError('Expecting float for val')
 
-        cdef double x = PyFloat_AsDouble(val)
-        cdef int done = 0
+        cdef double d = PyFloat_AsDouble(val)
 
-        if float_broken:
-            if memcmp(&x, &NaN, 8) == 0:
+        if float_broken == 1:
+            if memcmp(&d, &platform_nan, 8) == 0:
                 done = 1
-            elif memcmp(&x, &NegInf, 8) == 0:
+            elif memcmp(&d, &platform_neginf, 8) == 0:
                 done = 1
-            elif memcmp(&x, &PosInf, 8) == 0:
+            elif memcmp(&d, &platform_posinf, 8) == 0:
                 done = 1
 
             if done == 1:
                 if is_big_endian(SYSTEM_ENDIAN):
                     if not is_big_endian(self._endian):
-                        swap_bytes(<unsigned char *>&x, 8)
+                        swap_bytes(<unsigned char *>&d, 8)
                 else:
                     if is_big_endian(self._endian):
-                        swap_bytes(<unsigned char *>&x, 8)
+                        swap_bytes(<unsigned char *>&d, 8)
 
-                cBufferedByteStream.write(self, <char *>&x, 8)
+                cBufferedByteStream.write(self, <char *>&d, 8)
 
                 return
 
-        cBufferedByteStream.write_double(self, x)
+        cBufferedByteStream.write_double(self, d)
 
     def read_float(self):
+        """
+        Reads a 4 byte float from the stream.
+        """
         cdef float x
 
         if cBufferedByteStream.read_float(self, &x) == -1:
@@ -1069,10 +1525,27 @@ cdef class BufferedByteStream(cBufferedByteStream):
         return PyFloat_FromDouble(x)
 
     def write_float(self, x):
+        """
+        Writes a 4 byte float to the stream.
+
+        @param x: 4 byte float
+        @type x: C{float}
+        """
         if PyFloat_Check(x) == 0:
             raise TypeError('Expecting float for val')
 
         cBufferedByteStream.write_float(self, <float>x)
+
+    def append(self, data):
+        """
+        Append data to the end of the stream. The pointer will not move if
+        this operation is successful.
+
+        @param data: The data to append to the stream.
+        @type data: C{str} or C{unicode}
+        @raise TypeError: data is not C{str} or C{unicode}
+        """
+        cBufferedByteStream.append(self, data)
 
     def __add__(self, other):
         cdef long old_pos = <long>self.tell()
@@ -1092,14 +1565,3 @@ cdef class BufferedByteStream(cBufferedByteStream):
 
     def __str__(self):
         return cBufferedByteStream.getvalue(self)
-
-
-# init module here
-SYSTEM_ENDIAN = get_native_endian()
-
-if is_broken_float():
-    float_broken = 1
-
-    system_nan = _PyFloat_Unpack8(<unsigned char *>&NaN, not is_big_endian(SYSTEM_ENDIAN))
-    system_posinf = _PyFloat_Unpack8(<unsigned char *>&PosInf, not is_big_endian(SYSTEM_ENDIAN))
-    system_neginf = _PyFloat_Unpack8(<unsigned char *>&NegInf, not is_big_endian(SYSTEM_ENDIAN))

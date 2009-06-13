@@ -1817,6 +1817,9 @@ def encode_int(n):
 
 
 def decode_int(stream, signed=False):
+    """
+    Decode C{int}.
+    """
     n = result = 0
     b = stream.read_uchar()
 
