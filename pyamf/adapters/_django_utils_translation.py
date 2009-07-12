@@ -1,5 +1,5 @@
 # Copyright (c) 2007-2009 The PyAMF Project.
-# See LICENSE for details.
+# See LICENSE.txt for details.
 
 """
 C{django.utils.translation} adapter module.
@@ -11,6 +11,7 @@ C{django.utils.translation} adapter module.
 from django.utils.translation import ugettext_lazy
 
 import pyamf
+
 
 def convert_lazy(l, encoder=None):
     if l.__class__._delegate_unicode:

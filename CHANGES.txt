@@ -8,6 +8,46 @@ versions of PyAMF.
 
 0.5 (unreleased)
 ----------------
+ - Fixed an issue with Django model AutoFields being set to 0 by the Flex
+   client (Ticket:556)
+ - Added support for the collections module. (Ticket:474)
+ - Added type checks for class objects. (Ticket:473)
+ - GAE FloatProperty can now accept int's without issue (Ticket:609)
+ - Revamped the lazy imports module to use sys.meta_path instead. Fixes all
+   erroneous import errors (Ticket:485).
+ - Django models will now accept dynamic properties (Ticket:575)
+ - Django PK properties will be set first to allow related properties to apply
+   correctly (Ticket:599)
+ - p.r.encode/p.r.decode both have a new logger kwarg. Supply a logging.Logger
+   instance if you want to see debug output (Ticket:588)
+ - pyamf.TypedObjectClassAlias now forces the class type (Ticket:537)
+ - If a call to Decoder.readElement results in an IOError exception, the
+   original position of the stream will be restored (Ticket:573)
+ - Replaced hardcoded Python implementation title in p.r.gateway.SERVER_NAME
+   (Ticket:541)
+ - Provide a user friendly way to handle datetime.time objects (Ticket:498)
+ - Removed the useless pyamf.logging module (Ticket:577)
+ - Added a new register_package helper function to make bulk class
+   registration easier. Check the docstring for more info. (Ticket:576)
+ - cpyamf.amf3._decode_int now propagates exceptions correctly (Ticket:506)
+ - Fixed an incorrect OverflowError when encoding large integers in AMF3
+   (Ticket:519)
+ - Added `append` to pyamf.util.BufferedByteStream (Ticket:574)
+ - Added Epydoc signatures to all util.StringIOProxy, util.DataTypeMixIn and
+   util.BufferedByteStream classes (Ticket:440)
+ - Removed dependancy on fpconst. Platforms with broken platforms are detected
+   and handled correctly internally (Ticket:564)
+ - amf0.Encoder now supports attribute ordering (Ticket:558)
+ - Removed duplicate method Context.reset, in favour of Context.clear
+   (Ticket:527)
+ - Rewrote cpyamf.util.BufferedByteStream to not depend on cStringIO. Added a
+   C based api for stream functions (Ticket:513)
+ - Unified exceptions for BufferedByteStream so that only IOError is raised.
+   (Ticket:520)
+ - Made raising pyamf.ReferenceError optional for all Indexed* and Context
+   classes. Refactored AMF3 so that only one ClassDefinition is created per
+   class (Ticket:524)
+ - Strict type checking now on pyamf.util.BufferedByteStream (Ticket:512)
  - Removed the default loggers from p.r.gateway.*. To re-enable supply a
    logger instance as a keyword arg to the gateway constructor (Ticket:525)
  - Removed pyamf.util.make_classic_instance (as it is not used) (Ticket:521)
@@ -56,7 +96,7 @@ versions of PyAMF.
  - Support for SQLAlchemy 0.5.1 (Ticket:449)
  - amf0.Encoder now has a use_amf3 flag which determines which XML type to
    return to the client (Ticket:435)
- - BufferedByteString.truncate(length) now actually does something useful
+ - BufferedByteStream.truncate(length) now actually does something useful
    (Ticket:444)
  - setup.py now gets the version number from pyamf/__init__.py source
    (Ticket:429)

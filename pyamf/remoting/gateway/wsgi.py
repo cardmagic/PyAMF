@@ -1,5 +1,5 @@
 # Copyright (c) 2007-2009 The PyAMF Project.
-# See LICENSE for details.
+# See LICENSE.txt for details.
 
 """
 WSGI server implementation.
@@ -27,6 +27,7 @@ from pyamf import remoting
 from pyamf.remoting import gateway
 
 __all__ = ['WSGIGateway']
+
 
 class WSGIGateway(gateway.BaseGateway):
     """
@@ -76,13 +77,11 @@ class WSGIGateway(gateway.BaseGateway):
         body = environ['wsgi.input'].read(int(environ['CONTENT_LENGTH']))
         stream = None
 
-        context = pyamf.get_context(pyamf.AMF0)
-
         # Decode the request
         try:
-            request = remoting.decode(body, context, strict=self.strict)
-        except (pyamf.DecodeError, EOFError):
-            if self.logger is not None:
+            request = remoting.decode(body, strict=self.strict, logger=self.logger)
+        except (pyamf.DecodeError, IOError):
+            if self.logger:
                 self.logger.exception(gateway.format_exception())
 
             response = "400 Bad Request\n\nThe request body was unable to " \
@@ -101,10 +100,11 @@ class WSGIGateway(gateway.BaseGateway):
         except (KeyboardInterrupt, SystemExit):
             raise
         except:
-            if self.logger is not None:
+            if self.logger:
                 self.logger.exception(gateway.format_exception())
 
-            response = "500 Internal Server Error\n\nAn unexpected error occurred whilst decoding."
+            response = "500 Internal Server Error\n\nAn unexpected error " \
+                "occurred whilst decoding."
 
             if self.debug:
                 response += "\n\nTraceback:\n\n%s" % gateway.format_exception()
@@ -117,8 +117,8 @@ class WSGIGateway(gateway.BaseGateway):
 
             return [response]
 
-        if self.logger is not None:
-            self.logger.debug("AMF Request: %r" % request)
+        if self.logger:
+            self.logger.info("AMF Request: %r" % request)
 
         # Process the request
         try:
@@ -126,7 +126,7 @@ class WSGIGateway(gateway.BaseGateway):
         except (KeyboardInterrupt, SystemExit):
             raise
         except:
-            if self.logger is not None:
+            if self.logger:
                 self.logger.exception(gateway.format_exception())
 
             response = "500 Internal Server Error\n\nThe request was " \
@@ -143,14 +143,14 @@ class WSGIGateway(gateway.BaseGateway):
 
             return [response]
 
-        if self.logger is not None:
-            self.logger.debug("AMF Response: %r" % response)
+        if self.logger:
+            self.logger.info("AMF Response: %r" % response)
 
         # Encode the response
         try:
-            stream = remoting.encode(response, context, strict=self.strict)
+            stream = remoting.encode(response, strict=self.strict)
         except:
-            if self.logger is not None:
+            if self.logger:
                 self.logger.exception(gateway.format_exception())
 
             response = "500 Internal Server Error\n\nThe request was " \

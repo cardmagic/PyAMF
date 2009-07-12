@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 # Copyright (c) 2007-2009 The PyAMF Project.
-# See LICENSE for details.
+# See LICENSE.txt for details.
 
 """
 Tests for AMF0 Implementation.
@@ -9,36 +9,41 @@ Tests for AMF0 Implementation.
 @since: 0.1.0
 """
 
-import unittest, datetime, types
+import unittest
+import datetime
+import types
 
 import pyamf
 from pyamf import amf0, util
 from pyamf.tests.util import check_buffer, EncoderTester, DecoderTester, \
     ClassCacheClearingTestCase, Spam, ClassicSpam, isNaN, isPosInf, isNegInf
 
+
 class TypesTestCase(unittest.TestCase):
     """
     Tests the type mappings.
     """
+
     def test_types(self):
-        self.assertEquals(amf0.ASTypes.NUMBER, 0x00)
-        self.assertEquals(amf0.ASTypes.BOOL, 0x01)
-        self.assertEquals(amf0.ASTypes.STRING, 0x02)
-        self.assertEquals(amf0.ASTypes.OBJECT, 0x03)
-        self.assertEquals(amf0.ASTypes.MOVIECLIP, 0x04)
-        self.assertEquals(amf0.ASTypes.NULL, 0x05)
-        self.assertEquals(amf0.ASTypes.UNDEFINED, 0x06)
-        self.assertEquals(amf0.ASTypes.REFERENCE, 0x07)
-        self.assertEquals(amf0.ASTypes.MIXEDARRAY, 0x08)
-        self.assertEquals(amf0.ASTypes.OBJECTTERM, 0x09)
-        self.assertEquals(amf0.ASTypes.ARRAY, 0x0a)
-        self.assertEquals(amf0.ASTypes.DATE, 0x0b)
-        self.assertEquals(amf0.ASTypes.LONGSTRING, 0x0c)
-        self.assertEquals(amf0.ASTypes.UNSUPPORTED, 0x0d)
-        self.assertEquals(amf0.ASTypes.RECORDSET, 0x0e)
-        self.assertEquals(amf0.ASTypes.XML, 0x0f)
-        self.assertEquals(amf0.ASTypes.TYPEDOBJECT, 0x10)
-        self.assertEquals(amf0.ASTypes.AMF3, 0x11)
+        self.assertEquals(amf0.TYPE_NUMBER, '\x00')
+        self.assertEquals(amf0.TYPE_BOOL, '\x01')
+        self.assertEquals(amf0.TYPE_STRING, '\x02')
+        self.assertEquals(amf0.TYPE_OBJECT, '\x03')
+        self.assertEquals(amf0.TYPE_MOVIECLIP, '\x04')
+        self.assertEquals(amf0.TYPE_NULL, '\x05')
+        self.assertEquals(amf0.TYPE_UNDEFINED, '\x06')
+        self.assertEquals(amf0.TYPE_REFERENCE, '\x07')
+        self.assertEquals(amf0.TYPE_MIXEDARRAY, '\x08')
+        self.assertEquals(amf0.TYPE_OBJECTTERM, '\x09')
+        self.assertEquals(amf0.TYPE_ARRAY, '\x0a')
+        self.assertEquals(amf0.TYPE_DATE, '\x0b')
+        self.assertEquals(amf0.TYPE_LONGSTRING, '\x0c')
+        self.assertEquals(amf0.TYPE_UNSUPPORTED, '\x0d')
+        self.assertEquals(amf0.TYPE_RECORDSET, '\x0e')
+        self.assertEquals(amf0.TYPE_XML, '\x0f')
+        self.assertEquals(amf0.TYPE_TYPEDOBJECT, '\x10')
+        self.assertEquals(amf0.TYPE_AMF3, '\x11')
+
 
 class ContextTestCase(unittest.TestCase):
     def test_create(self):
@@ -113,6 +118,7 @@ class ContextTestCase(unittest.TestCase):
         self.assertEquals(x.getObjectReference(y), ref1)
         self.assertEquals(x.getObjectReference(z), ref2)
         self.assertRaises(pyamf.ReferenceError, x.getObjectReference, {})
+
 
 class EncoderTestCase(ClassCacheClearingTestCase):
     """
@@ -227,8 +233,6 @@ class EncoderTestCase(ClassCacheClearingTestCase):
             ), '\x00\x00\t')])
 
     def test_date(self):
-        import datetime
-
         self._run([
             (datetime.datetime(2005, 3, 18, 1, 58, 31),
                 '\x0bBp+6!\x15\x80\x00\x00\x00'),
@@ -236,6 +240,15 @@ class EncoderTestCase(ClassCacheClearingTestCase):
                 '\x0bBo%\xe2\xb2\x80\x00\x00\x00\x00'),
             (datetime.datetime(2009, 3, 8, 23, 30, 47, 770122),
                 '\x0bBq\xfe\x86\xca5\xa1\xf4\x00\x00')])
+
+        try:
+            self._run([(datetime.time(22, 3), '')])
+        except pyamf.EncodeError, e:
+            self.assertEquals(str(e), 'A datetime.time instance was found but '
+                'AMF0 has no way to encode time objects. Please use '
+                'datetime.datetime instead (got:datetime.time(22, 3))')
+        else:
+            self.fail('pyamf.EncodeError not raised when encoding datetime.time')
 
     def test_xml(self):
         self._run([
@@ -290,19 +303,21 @@ class EncoderTestCase(ClassCacheClearingTestCase):
                 '\x00\x04spam\x00\x01b\x02\x00\x04eggs\x00\x00\t\x07\x00\x02')])
 
     def test_amf3(self):
-        self.assertFalse(hasattr(self.context, 'amf3_context'))
+        self.assertFalse(hasattr(self.context, 'amf3_encoder'))
 
         self.context.addAMF3Object(1)
         self.encoder.writeElement(1)
         self.assertEquals(self.buf.getvalue(), '\x11\x04\x01')
 
-        self.assertTrue(hasattr(self.context, 'amf3_context'))
+        self.assertTrue(hasattr(self.context, 'amf3_encoder'))
+
+        encoder = self.context.amf3_encoder
 
         self.buf.seek(0)
         self.buf.truncate()
         obj = object()
         self.context.addAMF3Object(obj)
-        self.context.amf3_context.addObject(obj)
+        encoder.context.addObject(obj)
 
         self.encoder.writeElement(obj)
 
@@ -534,6 +549,46 @@ class EncoderTestCase(ClassCacheClearingTestCase):
             '\x07baz\x06\x07gak\x01'
         ))))
 
+    def test_static_attrs(self):
+        class Foo(object):
+            pass
+
+        class Bar(object):
+            pass
+
+        pyamf.register_class(Foo, attrs=['bar', 'foo'])
+        pyamf.register_class(Bar, attrs=['foo', 'bar'])
+
+        x = Foo()
+        x.foo = 'baz'
+        x.bar = 'gak'
+
+        y = Bar()
+        y.foo = 'baz'
+        y.bar = 'gak'
+
+        self.encoder.writeElement(x)
+
+        self.assertEquals(self.buf.getvalue(), '\x03\x00\x03bar\x02\x00\x03'
+            'gak\x00\x03foo\x02\x00\x03baz\x00\x00\t')
+
+        self.buf.truncate()
+        self.encoder.writeElement(y)
+
+        self.assertEquals(self.buf.getvalue(), '\x03\x00\x03foo\x02\x00\x03'
+            'baz\x00\x03bar\x02\x00\x03gak\x00\x00\t')
+
+    def test_class(self):
+        class Classic:
+            pass
+
+        class New(object):
+            pass
+
+        self.assertRaises(pyamf.EncodeError, self.encoder.writeElement, Classic)
+        self.assertRaises(pyamf.EncodeError, self.encoder.writeElement, New)
+
+
 class DecoderTestCase(ClassCacheClearingTestCase):
     """
     Tests the output from the AMF0 L{Decoder<pyamf.amf0.Decoder>} class.
@@ -551,17 +606,6 @@ class DecoderTestCase(ClassCacheClearingTestCase):
         e = DecoderTester(self.decoder, data)
         e.run(self)
 
-    def test_types(self):
-        for x in amf0.ACTIONSCRIPT_TYPES:
-            self.buf.write(chr(x))
-            self.buf.seek(0)
-            self.decoder.readType()
-            self.buf.truncate()
-
-        self.buf.write('x')
-        self.buf.seek(0)
-        self.assertRaises(pyamf.DecodeError, self.decoder.readType)
-
     def test_undefined(self):
         self._run([(pyamf.Undefined, '\x06')])
 
@@ -575,7 +619,7 @@ class DecoderTestCase(ClassCacheClearingTestCase):
             (1.23456789, '\x00\x3f\xf3\xc0\xca\x42\x83\xde\x1b')])
 
     def test_number_types(self):
-        types = [
+        nr_types = [
             ('\x00\x00\x00\x00\x00\x00\x00\x00\x00', int),
             ('\x00\x3f\xc9\x99\x99\x99\x99\x99\x9a', float),
             ('\x00\x3f\xf0\x00\x00\x00\x00\x00\x00', int),
@@ -587,7 +631,7 @@ class DecoderTestCase(ClassCacheClearingTestCase):
             ('\x00\x7f\xf0\x00\x00\x00\x00\x00\x00', float), # inf
         ]
 
-        for t in types:
+        for t in nr_types:
             bytes, expected_type = t
             self.buf.truncate()
             self.buf.write(bytes)
@@ -852,6 +896,23 @@ class DecoderTestCase(ClassCacheClearingTestCase):
         self.assertEquals(foo.family_name, 'Doe')
         self.assertEquals(foo.given_name, 'Jane')
 
+    def test_ioerror_buffer_position(self):
+        """
+        Test to ensure that if an IOError is raised by `readElement` that
+        the original position of the stream is restored.
+        """
+        bytes = pyamf.encode(u'foo', [1, 2, 3], encoding=pyamf.AMF0).getvalue()
+
+        self.buf.write(bytes[:-1])
+        self.buf.seek(0)
+
+        self.decoder.readElement()
+        self.assertEquals(self.buf.tell(), 6)
+
+        self.assertRaises(IOError, self.decoder.readElement)
+        self.assertEquals(self.buf.tell(), 6)
+
+
 class HelperTestCase(unittest.TestCase):
     def test_encode(self):
         buf = amf0.encode(1)
@@ -883,6 +944,7 @@ class HelperTestCase(unittest.TestCase):
         obj = object()
         context.addObject(obj)
         self.assertEquals([x for x in amf0.decode('\x07\x00\x00', context=context)], [obj])
+
 
 class RecordSetTestCase(unittest.TestCase):
     def test_create(self):
@@ -1017,6 +1079,7 @@ class RecordSetTestCase(unittest.TestCase):
         self.assertEquals(x.service, None)
         self.assertEquals(x.id, None)
 
+
 class ClassInheritanceTestCase(ClassCacheClearingTestCase):
     def test_simple(self):
         class A(object):
@@ -1074,6 +1137,7 @@ class ClassInheritanceTestCase(ClassCacheClearingTestCase):
             '\x00\x01c\x02\x00\x03foo',
             '\x00\x01b\x02\x00\x04eggs'
         ), '\x00\x00\t')))
+
 
 def suite():
     suite = unittest.TestSuite()

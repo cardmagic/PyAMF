@@ -1,5 +1,5 @@
 # Copyright (c) 2007-2009 The PyAMF Project.
-# See LICENSE for details.
+# See LICENSE.txt for details.
 
 """
 Tests for the adapters module.
@@ -7,11 +7,14 @@ Tests for the adapters module.
 @since: 0.3.1
 """
 
-import unittest, os, sys
+import unittest
+import os
+import sys
 
 from pyamf import adapters
 from pyamf.tests import util
 from pyamf.tests.test_imports import PostLoadHookClearingTestCase
+
 
 class AdapterHelperTestCase(PostLoadHookClearingTestCase):
     def setUp(self):
@@ -58,8 +61,6 @@ class AdapterHelperTestCase(PostLoadHookClearingTestCase):
         self.assertTrue(self.imported)
         self.assertEquals(self.foo, foo)
 
-    def test_root_import_fail(self):
-        self.assertRaises(ImportError, adapters.register_adapter, '__xyz', lambda x: x)
 
 def suite():
     import os.path
@@ -80,10 +81,11 @@ def suite():
                 mod = getattr(mod, x)
 
             suite.addTest(mod.suite())
-        except ImportError, e:
+        except ImportError:
             continue
 
     return suite
+
 
 def main():
     unittest.main(defaultTest='suite')

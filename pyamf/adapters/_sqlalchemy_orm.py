@@ -1,16 +1,5 @@
-# Copyright (c) 2007-2009 The PyAMF Project.
-# See LICENSE for details.
-
 """
-SQLAlchemy adapter module.
-
-@see: U{SQLAlchemy homepage (external)<http://www.sqlalchemy.org>}
-
-@since: 0.4
 """
-
-import sqlalchemy
-from sqlalchemy.orm import collections
 
 try:
     from sqlalchemy.orm import class_mapper, object_mapper
@@ -26,6 +15,7 @@ try:
     class_mapper(dict)
 except Exception, e:
     UnmappedInstanceError = e.__class__
+
 
 class SaMappedClassAlias(pyamf.ClassAlias):
     KEY_ATTR = 'sa_key'
@@ -120,7 +110,7 @@ class SaMappedClassAlias(pyamf.ClassAlias):
 
         for attr in dynamic_attr_names:
             if attr in obj.__dict__:
-                 dynamic_attrs[attr] = getattr(obj, attr)
+                dynamic_attrs[attr] = getattr(obj, attr)
 
         static_attrs[self.LAZY_ATTR] = lazy_attrs
 
@@ -138,7 +128,7 @@ class SaMappedClassAlias(pyamf.ClassAlias):
             return
 
         # Delete lazy-loaded attrs.
-        # 
+        #
         # Doing it this way ensures that lazy-loaded attributes are not
         # attached to the object, even if there is a default value specified
         # in the __init__ method.
@@ -158,8 +148,8 @@ class SaMappedClassAlias(pyamf.ClassAlias):
                     # SA callbacks are not triggered.
                     del obj.__dict__[lazy_attr]
 
-                # Delete from committed_state so 
-                # SA thinks this attribute was never modified.
+                # Delete from committed_state so SA thinks this attribute was
+                # never modified.
                 #
                 # If the attribute was set in the __init__ method,
                 # SA will think it is modified and will try to update
@@ -185,6 +175,7 @@ class SaMappedClassAlias(pyamf.ClassAlias):
 
         pyamf.util.set_attrs(obj, attrs)
 
+
 def is_class_sa_mapped(klass):
     """
     @rtype: C{bool}
@@ -200,7 +191,3 @@ def is_class_sa_mapped(klass):
     return True
 
 pyamf.register_alias_type(SaMappedClassAlias, is_class_sa_mapped)
-
-pyamf.add_type(collections.InstrumentedList, util.to_list)
-pyamf.add_type(collections.InstrumentedDict, util.to_dict)
-pyamf.add_type(collections.InstrumentedSet, util.to_set)

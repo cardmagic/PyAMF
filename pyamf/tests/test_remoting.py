@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 # Copyright (c) 2007-2009 The PyAMF Project.
-# See LICENSE for details.
+# See LICENSE.txt for details.
 
 """
 Tests for AMF Remoting.
@@ -14,6 +14,7 @@ import unittest
 import pyamf
 from pyamf import remoting, util
 
+
 class DecoderTestCase(unittest.TestCase):
     """
     Tests the decoders.
@@ -23,7 +24,7 @@ class DecoderTestCase(unittest.TestCase):
         for x in ('\x00', '\x03'):
             try:
                 remoting.decode(x)
-            except EOFError:
+            except IOError:
                 pass
 
         self.failUnlessRaises(pyamf.DecodeError, remoting.decode, '\x10')
@@ -35,7 +36,7 @@ class DecoderTestCase(unittest.TestCase):
         for x in ('\x00', '\x01', '\x03'):
             try:
                 remoting.decode('\x00' + x)
-            except EOFError:
+            except IOError:
                 pass
 
     def test_null_msg(self):
@@ -104,7 +105,7 @@ class DecoderTestCase(unittest.TestCase):
         self.assertEquals(y, [])
 
     def test_simple_body(self):
-        self.failUnlessRaises(EOFError, remoting.decode,
+        self.failUnlessRaises(IOError, remoting.decode,
             '\x00\x00\x00\x00\x00\x01')
 
         msg = remoting.decode('\x00\x00\x00\x00\x00\x01\x00\x09test.test\x00'
@@ -164,11 +165,11 @@ class DecoderTestCase(unittest.TestCase):
             '\x70\x00\x02\x2f\x31\x00\x00\x00\x1c\x0a\x00\x00\x00\x01\x11\x0a'
             '\x0b\x01\x09\x73\x74\x72\x41\x06\x09\x74\x65\x73\x74\x09\x73\x74'
             '\x72\x42\x06\x02\x01')
+
         self.assertEquals(msg.amfVersion, 0)
         self.assertEquals(msg.clientType, 3)
         self.assertEquals(len(msg.headers), 1)
-        self.assertEquals(
-            msg.headers['Credentials'],
+        self.assertEquals(msg.headers['Credentials'],
             {'password': 'gggg', 'userid':'genopro\\@gerard'})
         self.assertEquals(len(msg), 1)
         self.assertTrue('/1' in msg)
@@ -177,6 +178,7 @@ class DecoderTestCase(unittest.TestCase):
 
         self.assertEquals(m.target, 'createGroup')
         self.assertEquals(m.body, [{'strB':'test', 'strA':'test'}])
+
 
 class EncoderTestCase(unittest.TestCase):
     """
@@ -285,6 +287,7 @@ class EncoderTestCase(unittest.TestCase):
             '/onResult\x00\x04null\x00\x00\x00\x00\x11\x0bq<root><sections>'
             '<section /><section /></sections></root>')
 
+
 class StrictEncodingTestCase(unittest.TestCase):
     def test_request(self):
         msg = remoting.Envelope(pyamf.AMF0, pyamf.ClientTypes.Flash6)
@@ -304,6 +307,7 @@ class StrictEncodingTestCase(unittest.TestCase):
             '\x00\x00\x00\x00\x00\x01\x00\x0b/1/onResult\x00\x04null\x00\x00'
             '\x00\x0c\n\x00\x00\x00\x01\x02\x00\x04spam')
 
+
 class FaultTestCase(unittest.TestCase):
     def test_exception(self):
         x = remoting.get_fault({'level': 'error', 'code': 'Server.Call.Failed'})
@@ -313,6 +317,7 @@ class FaultTestCase(unittest.TestCase):
     def test_kwargs(self):
         x = remoting.get_fault({'foo': 'bar'})
         # The fact that this doesn't throw an error means that this test passes
+
 
 class ContextTextCase(unittest.TestCase):
     def test_body_references(self):
@@ -328,6 +333,7 @@ class ContextTextCase(unittest.TestCase):
             'a\x02\x00\x01b\x02\x00\x01c\x00\x03bar\x00\x02/2\x00\x00\x00\x00'
             '\n\x00\x00\x00\x01\n\x00\x00\x00\x03\x02\x00\x01a\x02\x00\x01b'
             '\x02\x00\x01c')
+
 
 class FunctionalTestCase(unittest.TestCase):
     def test_encode_bytearray(self):
@@ -363,6 +369,7 @@ class ReprTestCase(unittest.TestCase):
 
         self.assertEquals(repr(r),
             "BaseFault level=None code=u'\\xe5' type=u'\\xe5' description=u'\\xe5'\nTraceback:\nu'\\xe5'")
+
 
 def suite():
     """

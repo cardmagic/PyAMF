@@ -1,5 +1,5 @@
 # Copyright (c) 2007-2009 The PyAMF Project.
-# See LICENSE for details.
+# See LICENSE.txt for details.
 
 """
 Unit tests.
@@ -16,6 +16,7 @@ if not hasattr(unittest.TestCase, 'assertFalse'):
     unittest.TestCase.assertFalse = unittest.TestCase.failIf
 
 mod_base = 'pyamf.tests'
+
 
 def suite():
     import os.path
@@ -35,6 +36,7 @@ def suite():
         suite.addTest(mod.suite())
 
     return suite
+
 
 def main():
     unittest.main(defaultTest='suite')

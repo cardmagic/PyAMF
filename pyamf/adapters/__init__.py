@@ -1,5 +1,5 @@
 # Copyright (c) 2007-2009 The PyAMF Project.
-# See LICENSE for details.
+# See LICENSE.txt for details.
 
 """
 The adapter package provides additional functionality for other Python
@@ -8,9 +8,11 @@ packages. This includes registering classes, setting up type maps etc.
 @since: 0.1.0
 """
 
-import os.path, glob
+import os.path
+import glob
 
 from pyamf.util import imports
+
 
 class PackageImporter(object):
     """
@@ -23,6 +25,7 @@ class PackageImporter(object):
         __import__('%s.%s' % ('pyamf.adapters', self.name))
 
 adapters_registered = False
+
 
 def register_adapters():
     global adapters_registered
@@ -49,6 +52,7 @@ def register_adapters():
 
     adapters_registered = True
 
+
 def register_adapter(mod, func):
     """
     Registers a callable to be executed when a module is imported. If the
@@ -69,4 +73,4 @@ def register_adapter(mod, func):
     if not callable(func):
         raise TypeError('func must be callable')
 
-    imports.whenImported(str(mod), func)
+    imports.when_imported(str(mod), func)

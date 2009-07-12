@@ -1,5 +1,5 @@
 # Copyright (c) 2007-2009 The PyAMF Project.
-# See LICENSE for details.
+# See LICENSE.txt for details.
 
 """
 Google App Engine adapter module.
@@ -19,6 +19,7 @@ import datetime
 import pyamf
 from pyamf.util import imports
 from pyamf.adapters import util
+
 
 class ModelStub(object):
     """
@@ -41,6 +42,7 @@ class ModelStub(object):
 
     def dynamic_properties(self):
         return []
+
 
 class GAEReferenceCollection(dict):
     """
@@ -91,6 +93,7 @@ class GAEReferenceCollection(dict):
         d = self._getClass(klass)
 
         d[key] = obj
+
 
 class DataStoreClassAlias(pyamf.ClassAlias):
     """
@@ -212,7 +215,9 @@ class DataStoreClassAlias(pyamf.ClassAlias):
                     del attrs[k]
                     continue
 
-                if isinstance(prop, db.ListProperty) and v is None:
+                if isinstance(prop, db.FloatProperty) and isinstance(v, (int, long)):
+                    attrs[k] = float(v)
+                elif isinstance(prop, db.ListProperty) and v is None:
                     attrs[k] = []
                 elif isinstance(v, datetime.datetime):
                     # Date/Time Property fields expect specific types of data
@@ -248,6 +253,7 @@ class DataStoreClassAlias(pyamf.ClassAlias):
         for k, v in attrs.iteritems():
             setattr(obj, k, v)
 
+
 def getGAEObjects(context):
     """
     Returns a reference to the C{gae_objects} on the context. If it doesn't
@@ -263,6 +269,7 @@ def getGAEObjects(context):
         context.gae_objects = GAEReferenceCollection()
 
     return context.gae_objects
+
 
 def loadInstanceFromDatastore(klass, key, codec=None):
     """
@@ -305,6 +312,7 @@ def loadInstanceFromDatastore(klass, key, codec=None):
 
     return obj
 
+
 def writeGAEObject(self, object, *args, **kwargs):
     """
     The GAE Datastore creates new instances of objects for each get request.
@@ -343,6 +351,7 @@ def writeGAEObject(self, object, *args, **kwargs):
 
     self.writeNonGAEObject(referenced_object, *args, **kwargs)
 
+
 def install_gae_reference_model_hook(mod):
     """
     Called when L{pyamf.amf0} or L{pyamf.amf3} are imported. Attaches the
@@ -361,5 +370,5 @@ pyamf.add_type(db.Query, util.to_list)
 pyamf.register_alias_type(DataStoreClassAlias, db.Model, db.Expando)
 
 # hook the L{writeGAEObject} method to the Encoder class on import
-imports.whenImported('pyamf.amf0', install_gae_reference_model_hook)
-imports.whenImported('pyamf.amf3', install_gae_reference_model_hook)
+imports.when_imported('pyamf.amf0', install_gae_reference_model_hook)
+imports.when_imported('pyamf.amf3', install_gae_reference_model_hook)

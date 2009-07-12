@@ -1,5 +1,5 @@
 # Copyright (c) 2007-2009 The PyAMF Project.
-# See LICENSE for details.
+# See LICENSE.txt for details.
 
 """
 Tests for the adapters.util module.
@@ -16,6 +16,7 @@ import __builtin__
 
 if not hasattr(__builtin__, 'set'):
     from sets import Set as set
+
 
 class Iterable(object):
     """
@@ -36,6 +37,7 @@ class Iterable(object):
 
     def __getitem__(self, name):
         return self.iterable.__getitem__(name)
+
 
 class HelperTestCase(unittest.TestCase):
     def setUp(self):
@@ -76,6 +78,7 @@ def suite():
     suite.addTest(unittest.makeSuite(HelperTestCase))
 
     return suite
+
 
 def main():
     unittest.main(defaultTest='suite')

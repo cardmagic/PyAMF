@@ -1,11 +1,11 @@
 # Copyright (c) 2007-2009 The PyAMF Project.
-# See LICENSE for details.
+# See LICENSE.txt for details.
 
 from ez_setup import use_setuptools
 
 use_setuptools()
 
-import sys
+import sys, os.path
 from setuptools import setup, find_packages, Extension
 from setuptools.command import test
 
@@ -13,6 +13,7 @@ try:
     from Cython.Distutils import build_ext
 except ImportError:
     from setuptools.command.build_ext import build_ext
+
 
 class TestCommand(test.test):
     def run_twisted(self):
@@ -36,6 +37,7 @@ class TestCommand(test.test):
         except ImportError:
             return test.test.run_tests(self)
 
+
 def get_version():
     """
     Gets the version number. Pulls it from the source files rather than
@@ -43,11 +45,10 @@ def get_version():
 
     @since: 0.4
     """
-    import os.path
     # we read the file instead of importing it as root sometimes does not
     # have the cwd as part of the PYTHONPATH
 
-    fn = os.path.join(os.path.dirname(__file__), 'pyamf', '__init__.py')
+    fn = os.path.join(os.getcwd(), 'pyamf', '__init__.py')
     lines = open(fn, 'rt').readlines()
 
     version = None
@@ -65,20 +66,6 @@ def get_version():
 
     return '.'.join([str(x) for x in version])
 
-def is_float_broken():
-    """
-    Older versions of python (<=2.5) and the Windows platform are renowned for
-    mixing up 'special' floats. This function determines whether this is the
-    case.
-
-    @since: 0.4
-    """
-    import struct
-
-    # we do this instead of float('nan') because windows throws a wobbler.
-    nan = 1e300000 / 1e300000
-
-    return str(nan) != str(struct.unpack("!d", '\xff\xf8\x00\x00\x00\x00\x00\x00')[0])
 
 def get_cpyamf_extensions():
     """
@@ -118,6 +105,7 @@ def get_cpyamf_extensions():
 
     return ext_modules
 
+
 def get_extensions():
     """
     Returns a list of extensions to be built for PyAMF.
@@ -130,6 +118,7 @@ def get_extensions():
 
     return ext_modules
 
+
 def get_install_requirements():
     """
     Returns a list of dependancies for PyAMF to function correctly on the
@@ -140,23 +129,23 @@ def get_install_requirements():
     if sys.version_info < (2, 5):
         install_requires.extend(["elementtree >= 1.2.6", "uuid>=1.30"])
 
-    if is_float_broken():
-        install_requires.append("fpconst>=0.7.2")
-
     return install_requires
+
 
 keyw = """\
 amf amf0 amf3 flex flash remoting rpc http flashplayer air bytearray
 objectproxy arraycollection recordset actionscript decoder encoder
 gateway remoteobject twisted pylons django sharedobject lso sol"""
 
+readme = os.path.join(os.path.dirname(__file__), 'README.txt')
+
 setup(name = "PyAMF",
     version = get_version(),
     description = "AMF support for Python",
-    long_description = open('README.txt', 'rt').read(),
+    long_description = open(readme, 'rt').read(),
     url = "http://pyamf.org",
     author = "The PyAMF Project",
-    author_email = "dev@pyamf.org",
+    author_email = "users@pyamf.org",
     keywords = keyw,
     packages = find_packages(exclude=["*.tests"]),
     ext_modules = get_extensions(),

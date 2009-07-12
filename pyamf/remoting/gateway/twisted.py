@@ -1,5 +1,5 @@
 # Copyright (c) 2007-2009 The PyAMF Project.
-# See LICENSE for details.
+# See LICENSE.txt for details.
 
 """
 Twisted server implementation.
@@ -12,7 +12,8 @@ servers.
 @since: 0.1.0
 """
 
-import sys, os.path
+import sys
+import os.path
 
 try:
     sys.path.remove('')
@@ -35,7 +36,6 @@ threads = twisted.internet.threads
 resource = twisted.web.resource
 server = twisted.web.server
 
-import pyamf
 from pyamf import remoting
 from pyamf.remoting import gateway, amf0, amf3
 
@@ -58,7 +58,7 @@ class AMF0RequestProcessor(amf0.RequestProcessor):
         try:
             service_request = self.gateway.getServiceRequest(
                 request, request.target)
-        except gateway.UnknownServiceError, e:
+        except gateway.UnknownServiceError:
             return defer.succeed(self.buildErrorResponse(request))
 
         response = remoting.Response(None)
@@ -67,7 +67,7 @@ class AMF0RequestProcessor(amf0.RequestProcessor):
         def eb(failure):
             errMesg = "%s: %s" % (failure.type, failure.getErrorMessage())
 
-            if self.gateway.logger is not None:
+            if self.gateway.logger:
                 self.gateway.logger.error(errMesg)
                 self.gateway.logger.info(failure.getTraceback())
 
@@ -75,7 +75,7 @@ class AMF0RequestProcessor(amf0.RequestProcessor):
                 request, (failure.type, failure.value, failure.tb)))
 
         def response_cb(result):
-            if self.gateway.logger is not None:
+            if self.gateway.logger:
                 self.gateway.logger.debug("AMF Response: %s" % (result,))
 
             response.body = result
@@ -129,7 +129,7 @@ class AMF3RequestProcessor(amf3.RequestProcessor):
 
             service_request = self.gateway.getServiceRequest(amf_request,
                                                              service_name)
-        except gateway.UnknownServiceError, e:
+        except gateway.UnknownServiceError:
             return defer.succeed(remoting.Response(
                 self.buildErrorResponse(ro_request),
                 status=remoting.STATUS_ERROR))
@@ -139,7 +139,7 @@ class AMF3RequestProcessor(amf3.RequestProcessor):
         def eb(failure):
             errMesg = "%s: %s" % (failure.type, failure.getErrorMessage())
 
-            if self.gateway.logger is not None:
+            if self.gateway.logger:
                 self.gateway.logger.error(errMesg)
                 self.gateway.logger.info(failure.getTraceback())
 
@@ -152,7 +152,7 @@ class AMF3RequestProcessor(amf3.RequestProcessor):
             ro_response.body = result
             res = remoting.Response(ro_response)
 
-            if self.gateway.logger is not None:
+            if self.gateway.logger:
                 self.gateway.logger.debug("AMF Response: %r" % (res,))
 
             deferred_response.callback(res)
@@ -184,7 +184,7 @@ class AMF3RequestProcessor(amf3.RequestProcessor):
         def eb(failure):
             errMesg = "%s: %s" % (failure.type, failure.getErrorMessage())
 
-            if self.gateway.logger is not None:
+            if self.gateway.logger:
                 self.gateway.logger.error(errMesg)
                 self.gateway.logger.info(failure.getTraceback())
 
@@ -250,7 +250,7 @@ class TwistedGateway(gateway.BaseGateway, resource.Resource):
             """
             errMesg = "%s: %s" % (failure.type, failure.getErrorMessage())
 
-            if self.logger is not None:
+            if self.logger:
                 self.logger.error(errMesg)
                 self.logger.info(failure.getTraceback())
 
@@ -263,25 +263,24 @@ class TwistedGateway(gateway.BaseGateway, resource.Resource):
             self._finaliseRequest(request, 400, body)
 
         request.content.seek(0, 0)
-        context = pyamf.get_context(pyamf.AMF0)
 
         d = threads.deferToThread(remoting.decode, request.content.read(),
-            context, strict=self.strict)
+            strict=self.strict, logger=self.logger)
 
         def cb(amf_request):
-            if self.logger is not None:
+            if self.logger:
                 self.logger.debug("AMF Request: %r" % amf_request)
 
             x = self.getResponse(request, amf_request)
 
-            x.addCallback(self.sendResponse, request, context)
+            x.addCallback(self.sendResponse, request)
 
         # Process the request
         d.addCallback(cb).addErrback(handleDecodeError)
 
         return server.NOT_DONE_YET
 
-    def sendResponse(self, amf_response, request, context):
+    def sendResponse(self, amf_response, request):
         def cb(result):
             self._finaliseRequest(request, 200, result.getvalue(),
                 remoting.CONTENT_TYPE)
@@ -292,19 +291,20 @@ class TwistedGateway(gateway.BaseGateway, resource.Resource):
             """
             errMesg = "%s: %s" % (failure.type, failure.getErrorMessage())
 
-            if self.logger is not None:
+            if self.logger:
                 self.logger.error(errMesg)
                 self.logger.info(failure.getTraceback())
 
-            body = "500 Internal Server Error\n\nThere was an error encoding" \
-                " the response."
+            body = "500 Internal Server Error\n\nThere was an error encoding " \
+                "the response."
 
             if self.debug:
                 body += "\n\nTraceback:\n\n%s" % failure.getTraceback()
 
             self._finaliseRequest(request, 500, body)
 
-        d = threads.deferToThread(remoting.encode, amf_response, context, strict=self.strict)
+        d = threads.deferToThread(remoting.encode, amf_response,
+            strict=self.strict, logger=self.logger)
 
         d.addCallback(cb).addErrback(eb)
 
@@ -329,8 +329,8 @@ class TwistedGateway(gateway.BaseGateway, resource.Resource):
         @param amf_request: The AMF Request.
         @type amf_request: L{Envelope<pyamf.remoting.Envelope>}
         """
-        response = remoting.Envelope(
-            amf_request.amfVersion, amf_request.clientType)
+        response = remoting.Envelope(amf_request.amfVersion,
+            amf_request.clientType)
         dl = []
 
         def cb(body, name):
@@ -340,6 +340,10 @@ class TwistedGateway(gateway.BaseGateway, resource.Resource):
             processor = self.getProcessor(message)
 
             http_request.amf_request = message
+
+            d = defer.maybeDeferred(processor, message,
+                http_request=http_request)
+            d.addCallback(cb, name)
 
             d = defer.maybeDeferred(
                 processor, message, http_request=http_request)
@@ -355,7 +359,7 @@ class TwistedGateway(gateway.BaseGateway, resource.Resource):
             """
             errMesg = "%s: %s" % (failure.type, failure.getErrorMessage())
 
-            if self.logger is not None:
+            if self.logger:
                 self.logger.error(errMesg)
                 self.logger.info(failure.getTraceback())
 
@@ -381,7 +385,7 @@ class TwistedGateway(gateway.BaseGateway, resource.Resource):
         """
         authenticator = self.getAuthenticator(service_request)
 
-        if self.logger is not None:
+        if self.logger:
             self.logger.debug('Authenticator expands to: %r' % authenticator)
 
         if authenticator is None:
@@ -401,7 +405,7 @@ class TwistedGateway(gateway.BaseGateway, resource.Resource):
         """
         processor = self.getPreprocessor(service_request)
 
-        if self.logger is not None:
+        if self.logger:
             self.logger.debug('Preprocessor expands to: %r' % processor)
 
         if processor is None:

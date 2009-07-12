@@ -1,5 +1,5 @@
 # Copyright (c) 2007-2009 The PyAMF Project.
-# See LICENSE for details.
+# See LICENSE.txt for details.
 
 """
 AMF3 RemoteObject support.
@@ -10,7 +10,10 @@ AMF3 RemoteObject support.
 @since: 0.1.0
 """
 
-import calendar, time, uuid, sys
+import calendar
+import time
+import uuid
+import sys
 
 import pyamf
 from pyamf import remoting
@@ -18,10 +21,12 @@ from pyamf.flex import messaging
 
 error_alias = pyamf.get_class_alias(messaging.ErrorMessage)
 
+
 class BaseServerError(pyamf.BaseError):
     """
     Base server error.
     """
+
 
 class ServerCallFailed(BaseServerError):
     """
@@ -33,8 +38,10 @@ pyamf.register_class(ServerCallFailed, attrs=error_alias.attrs)
 
 del error_alias
 
+
 def generate_random_id():
     return str(uuid.uuid4())
+
 
 def generate_acknowledgement(request=None):
     ack = messaging.AcknowledgeMessage()
@@ -47,6 +54,7 @@ def generate_acknowledgement(request=None):
         ack.correlationId = request.messageId
 
     return ack
+
 
 def generate_error(request, cls, e, tb):
     """
@@ -69,6 +77,7 @@ def generate_error(request, cls, e, tb):
         clientId=generate_random_id(), timestamp=calendar.timegm(time.gmtime()),
         correlationId = request.messageId, faultCode=code, faultString=str(e),
         faultDetail=str(detail), extendedData=detail)
+
 
 class RequestProcessor(object):
     def __init__(self, gateway):

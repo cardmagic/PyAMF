@@ -1,5 +1,5 @@
 # Copyright (c) 2007-2009 The PyAMF Project.
-# See LICENSE for details.
+# See LICENSE.txt for details.
 
 """
 Flex Data Management Service implementation.
@@ -19,6 +19,7 @@ __all__ = [
     'PagedMessage',
     'DataErrorMessage'
 ]
+
 
 class DataMessage(AsyncMessage):
     """
@@ -47,6 +48,7 @@ class DataMessage(AsyncMessage):
         #: this message.
         self.operation = None
 
+
 class SequencedMessage(AcknowledgeMessage):
     """
     Response to L{DataMessage} requests.
@@ -73,6 +75,7 @@ class SequencedMessage(AcknowledgeMessage):
         #:
         self.dataMessage = None
 
+
 class PagedMessage(SequencedMessage):
     """
     This messsage provides information about a partial sequence result.
@@ -86,9 +89,9 @@ class PagedMessage(SequencedMessage):
         #: Provides access to the number of total pages in a sequence
         #: based on the current page size.
         self.pageCount = None
-        #: Provides access to the index of the current page in a
-        #: sequence.
+        #: Provides access to the index of the current page in a sequence.
         self.pageIndex = None
+
 
 class DataErrorMessage(ErrorMessage):
     """

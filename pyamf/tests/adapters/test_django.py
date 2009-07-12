@@ -1,5 +1,5 @@
 # Copyright (c) 2007-2009 The PyAMF Project.
-# See LICENSE for details.
+# See LICENSE.txt for details.
 
 """
 PyAMF Django adapter tests.
@@ -7,11 +7,15 @@ PyAMF Django adapter tests.
 @since: 0.3.1
 """
 
-import unittest, sys, os, new
+import unittest
+import sys
+import os
+import new
 import datetime
 
 import pyamf
 from pyamf.tests import util
+
 
 class ModelsBaseTestCase(unittest.TestCase):
     def setUp(self):
@@ -74,6 +78,7 @@ class ModelsBaseTestCase(unittest.TestCase):
 
         sys.stderr = old_stderr
 
+
 class TypeMapTestCase(ModelsBaseTestCase):
     def test_objects_all(self):
         from django.db import models
@@ -102,6 +107,7 @@ class TypeMapTestCase(ModelsBaseTestCase):
         encoder = pyamf.get_encoder(pyamf.AMF3)
         encoder.writeElement(fields.NOT_PROVIDED)
         self.assertEquals(encoder.stream.getvalue(), '\x00')
+
 
 class ClassAliasTestCase(ModelsBaseTestCase):
     def test_time(self):
@@ -161,7 +167,7 @@ class ClassAliasTestCase(ModelsBaseTestCase):
         })
 
         self.assertEquals(x.id, fields.NOT_PROVIDED)
-    
+
         x.id = fields.NOT_PROVIDED
 
         sa, da = alias.getAttributes(x)
@@ -198,6 +204,37 @@ class ClassAliasTestCase(ModelsBaseTestCase):
 
         # test it hasn't been set
         self.assertEquals(x.numberOfOddPages, 234)
+
+    def test_dynamic(self):
+        """
+        Test for dynamic property encoding.
+        """
+        from django.db import models
+
+        class Foo(models.Model):
+            pass
+
+        alias = self.adapter.DjangoClassAlias(Foo, 'Book')
+
+        x = Foo()
+        x.spam = 'eggs'
+
+        self.assertEquals(alias.getAttrs(x), (
+            ['id'],
+            ['spam']
+        ))
+
+        self.assertEquals(alias.getAttributes(x), (
+            {'id': None},
+            {'spam': 'eggs'}
+        ))
+
+        # now we test sending the numberOfOddPages attribute
+        alias.applyAttributes(x, {'spam': 'foo', 'id': None})
+
+        # test it has been set
+        self.assertEquals(x.spam, 'foo')
+
 
 class ForeignKeyTestCase(ModelsBaseTestCase):
     def test_one_to_many(self):
@@ -389,6 +426,7 @@ class ForeignKeyTestCase(ModelsBaseTestCase):
         self.assertEquals(len(p), 1)
         self.assertEquals(p[0], p1)
 
+
 class I18NTestCase(ModelsBaseTestCase):
     def test_encode(self):
         from django.utils.translation import ugettext_lazy
@@ -396,19 +434,96 @@ class I18NTestCase(ModelsBaseTestCase):
         self.assertEquals(pyamf.encode(ugettext_lazy('Hello')).getvalue(),
             '\x02\x00\x05Hello')
 
+
+class PKTestCase(ModelsBaseTestCase):
+    """
+    See ticket #599 for this. Check to make sure that django pk fields
+    are set first
+    """
+
+    def test_behaviour(self):
+        from django.db import models
+
+        class Publication(models.Model):
+            title = models.CharField(max_length=30)
+
+            def __unicode__(self):
+                return self.title
+
+            class Meta:
+                ordering = ('title',)
+
+        class Article2(models.Model):
+            headline = models.CharField(max_length=100)
+            publications = models.ManyToManyField(Publication)
+
+            def __unicode__(self):
+                return self.headline
+
+            class Meta:
+                ordering = ('headline',)
+
+        self.resetDB()
+
+        p = Publication(id=None, title='The Python Journal')
+        a = Article2(id=None, headline='Django lets you build Web apps easily')
+
+        # Associate the Article with a Publication.
+        self.assertRaises(ValueError, lambda a, p: a.publications.add(p), a, p)
+
+        p.save()
+        a.save()
+
+        self.assertEquals(a.id, 2)
+
+        article_alias = self.adapter.DjangoClassAlias(Article2, None)
+        x = Article2()
+
+        article_alias.applyAttributes(x, {
+            'headline': 'Foo bar!',
+            'id': 2,
+            'publications': [p]
+        })
+
+    def test_none(self):
+        """
+        See #556. Make sure that PK fields with a value of 0 are actually set
+        to C{None}.
+        """
+        from django.db import models
+
+        class Foo(models.Model):
+            pass
+
+        self.resetDB()
+
+        alias = self.adapter.DjangoClassAlias(Foo, None)
+
+        x = Foo()
+
+        self.assertEquals(x.id, None)
+
+        alias.applyAttributes(x, {
+            'id': 0
+        })
+
+        self.assertEquals(x.id, None)
+
+
 def suite():
     suite = unittest.TestSuite()
 
     try:
         import django
-    except ImportError, e:
+    except ImportError:
         return suite
 
     test_cases = [
         TypeMapTestCase,
         ClassAliasTestCase,
         ForeignKeyTestCase,
-        I18NTestCase
+        I18NTestCase,
+        PKTestCase
     ]
 
     for tc in test_cases:

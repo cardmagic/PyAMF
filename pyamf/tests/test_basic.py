@@ -1,5 +1,5 @@
 # Copyright (c) 2007-2009 The PyAMF Project.
-# See LICENSE for details.
+# See LICENSE.txt for details.
 
 """
 General tests.
@@ -8,9 +8,11 @@ General tests.
 """
 
 import unittest
+import new
 
 import pyamf
 from pyamf.tests.util import ClassCacheClearingTestCase, replace_dict, Spam
+
 
 class ASObjectTestCase(unittest.TestCase):
     """
@@ -74,6 +76,7 @@ class ASObjectTestCase(unittest.TestCase):
 
         self.assertNotEquals(None, hash(bag))
 
+
 class ClassMetaDataTestCase(unittest.TestCase):
     def test_create(self):
         x = pyamf.ClassMetaData()
@@ -118,6 +121,7 @@ class ClassMetaDataTestCase(unittest.TestCase):
         self.assertFalse('dynamic' in x)
         x.append('dynamic')
         self.assertTrue('dynamic' in x)
+
 
 class ClassAliasTestCase(ClassCacheClearingTestCase):
     """
@@ -306,6 +310,7 @@ class ClassAliasTestCase(ClassCacheClearingTestCase):
         self._obj = Spam()
         self.assertEquals(alias.getAttrs(self._obj), (['foo', 'bar'], []))
 
+
 class HelperTestCase(unittest.TestCase):
     """
     Tests all helper functions in C{pyamf.__init__}
@@ -372,6 +377,7 @@ class HelperTestCase(unittest.TestCase):
         returned = [x for x in pyamf.decode(bytes)]
 
         self.assertEquals(expected, returned)
+
 
 class RegisterClassTestCase(ClassCacheClearingTestCase):
     def test_simple(self):
@@ -457,6 +463,7 @@ class RegisterClassTestCase(ClassCacheClearingTestCase):
 
         pyamf.register_class(Foo)
 
+
 class UnregisterClassTestCase(ClassCacheClearingTestCase):
     def test_klass(self):
         alias = pyamf.register_class(Spam, 'spam.eggs')
@@ -471,6 +478,7 @@ class UnregisterClassTestCase(ClassCacheClearingTestCase):
         pyamf.unregister_class('spam.eggs')
         self.assertTrue('spam.eggs' not in pyamf.CLASS_CACHE.keys())
         self.assertTrue(alias not in pyamf.CLASS_CACHE)
+
 
 class ClassLoaderTestCase(ClassCacheClearingTestCase):
     def test_register(self):
@@ -539,6 +547,7 @@ class ClassLoaderTestCase(ClassCacheClearingTestCase):
         self.assertRaises(pyamf.UnknownClassAlias, pyamf.load_class,
             '__builtin__.tuple.')
 
+
 class TypeMapTestCase(unittest.TestCase):
     def setUp(self):
         self.tm = dict(pyamf.TYPE_MAP)
@@ -547,8 +556,6 @@ class TypeMapTestCase(unittest.TestCase):
         pyamf.TYPE_MAP = self.tm
 
     def test_add_invalid(self):
-        import new
-
         mod = new.module('spam')
         self.assertRaises(TypeError, pyamf.add_type, mod)
         self.assertRaises(TypeError, pyamf.add_type, {})
@@ -622,6 +629,7 @@ class TypeMapTestCase(unittest.TestCase):
 
         self.assertEquals(td, td2)
 
+
 class ErrorClassMapTestCase(unittest.TestCase):
     """
     I test all functionality related to manipulating L{pyamf.ERROR_CLASS_MAP}
@@ -676,8 +684,10 @@ class ErrorClassMapTestCase(unittest.TestCase):
         self.assertRaises(ValueError, pyamf.remove_error_class, B)
         self.assertRaises(ValueError, pyamf.remove_error_class, 'abc')
 
+
 class DummyAlias(pyamf.ClassAlias):
     pass
+
 
 class RegisterAliasTypeTestCase(unittest.TestCase):
     def setUp(self):
@@ -731,6 +741,7 @@ class RegisterAliasTypeTestCase(unittest.TestCase):
 
         self.assertRaises(RuntimeError, pyamf.register_alias_type, DummyAlias, A)
 
+
 class BaseContextTestCase(unittest.TestCase):
     def test_no_alias(self):
         x = pyamf.BaseContext()
@@ -775,6 +786,28 @@ class BaseContextTestCase(unittest.TestCase):
         self.assertEquals(alias.__class__, DummyAlias)
         self.assertEquals(alias.klass, B)
 
+    def test_create(self):
+        x = pyamf.BaseContext()
+
+        self.assertTrue(x.exceptions)
+        self.assertFalse(x.objects.exceptions)
+
+    def test_object_references(self):
+        x = pyamf.BaseContext()
+
+        self.assertRaises(pyamf.ReferenceError, x.getObject, 62)
+
+        x.exceptions = False
+        self.assertEquals(x.getObject(62), None)
+
+        x = pyamf.BaseContext()
+
+        self.assertRaises(pyamf.ReferenceError, x.getObjectReference, object())
+
+        x.exceptions = False
+        self.assertEquals(x.getObjectReference(object()), None)
+
+
 class TypedObjectTestCase(unittest.TestCase):
     def test_externalised(self):
         o = pyamf.TypedObject(None)
@@ -782,21 +815,174 @@ class TypedObjectTestCase(unittest.TestCase):
         self.assertRaises(pyamf.DecodeError, o.__readamf__, None)
         self.assertRaises(pyamf.EncodeError, o.__writeamf__, None)
 
+    def test_alias(self):
+        class Foo:
+            pass
+
+        alias = pyamf.TypedObjectClassAlias(Foo, 'bar')
+
+        self.assertEquals(alias.klass, pyamf.TypedObject)
+        self.assertNotEqual(alias.klass, Foo)
+
+
+class PackageTestCase(ClassCacheClearingTestCase):
+    """
+    Tests for L{pyamf.register_package}
+    """
+
+    class NewType(object):
+        pass
+
+    class ClassicType:
+        pass
+
+    def setUp(self):
+        ClassCacheClearingTestCase.setUp(self)
+
+        self.module = new.module('foo')
+
+        self.module.Classic = self.ClassicType
+        self.module.New = self.NewType
+        self.module.s = 'str'
+        self.module.i = 12323
+        self.module.f = 345.234
+        self.module.u = u'unicode'
+        self.module.l = ['list', 'of', 'junk']
+        self.module.d = {'foo': 'bar', 'baz': 'gak'}
+        self.module.obj = object()
+        self.module.mod = self.module
+        self.module.lam = lambda _: None
+
+        self.NewType.__module__ = 'foo'
+        self.ClassicType.__module__ = 'foo'
+
+        self.spam_module = Spam.__module__
+        Spam.__module__ = 'foo'
+
+        self.names = (self.module.__name__,)
+
+    def tearDown(self):
+        ClassCacheClearingTestCase.tearDown(self)
+
+        Spam.__module__ = self.spam_module
+
+        self.module.__name__ = self.names
+
+    def check_module(self, r, base_package):
+        self.assertEquals(len(r), 2)
+
+        for c in [self.NewType, self.ClassicType]:
+            alias = r[c]
+
+            self.assertTrue(isinstance(alias, pyamf.ClassAlias))
+            self.assertEquals(alias.klass, c)
+            self.assertEquals(alias.alias, base_package + c.__name__)
+
+    def test_module(self):
+        r = pyamf.register_package(self.module, 'com.example')
+        self.check_module(r, 'com.example.')
+
+    def test_all(self):
+        self.module.Spam = Spam
+
+        self.module.__all__ = ['Classic', 'New']
+
+        r = pyamf.register_package(self.module, 'com.example')
+        self.check_module(r, 'com.example.')
+
+    def test_ignore(self):
+        self.module.Spam = Spam
+
+        r = pyamf.register_package(self.module, 'com.example', ignore=['Spam'])
+        self.check_module(r, 'com.example.')
+
+    def test_separator(self):
+        r = pyamf.register_package(self.module, 'com.example', separator='/')
+
+        self.ClassicType.__module__ = 'com.example'
+        self.NewType.__module__ = 'com.example'
+        self.check_module(r, 'com.example/')
+
+    def test_name(self):
+        self.module.__name__ = 'spam.eggs'
+        self.ClassicType.__module__ = 'spam.eggs'
+        self.NewType.__module__ = 'spam.eggs'
+
+        r = pyamf.register_package(self.module)
+        self.check_module(r, 'spam.eggs.')
+
+    def test_dict(self):
+        """
+        @see: #585
+        """
+        d = dict()
+        d['Spam'] = Spam
+
+        r = pyamf.register_package(d, 'com.example', strict=False)
+
+        self.assertEquals(len(r), 1)
+
+        alias = r[Spam]
+
+        self.assertTrue(isinstance(alias, pyamf.ClassAlias))
+        self.assertEquals(alias.klass, Spam)
+        self.assertEquals(alias.alias, 'com.example.Spam')
+
+    def test_odd(self):
+        self.assertRaises(TypeError, pyamf.register_package, object())
+        self.assertRaises(TypeError, pyamf.register_package, 1)
+        self.assertRaises(TypeError, pyamf.register_package, 1.2)
+        self.assertRaises(TypeError, pyamf.register_package, 23897492834L)
+        self.assertRaises(TypeError, pyamf.register_package, [])
+        self.assertRaises(TypeError, pyamf.register_package, '')
+        self.assertRaises(TypeError, pyamf.register_package, u'')
+
+    def test_strict(self):
+        self.module.Spam = Spam
+
+        Spam.__module__ = self.spam_module
+
+        r = pyamf.register_package(self.module, 'com.example', strict=True)
+        self.check_module(r, 'com.example.')
+
+    def test_not_strict(self):
+        self.module.Spam = Spam
+
+        Spam.__module__ = self.spam_module
+
+        r = pyamf.register_package(self.module, 'com.example', strict=False)
+
+        self.assertEquals(len(r), 3)
+
+        for c in [self.NewType, self.ClassicType, Spam]:
+            alias = r[c]
+
+            self.assertTrue(isinstance(alias, pyamf.ClassAlias))
+            self.assertEquals(alias.klass, c)
+            self.assertEquals(alias.alias, 'com.example.' + c.__name__)
+
+
 def suite():
     suite = unittest.TestSuite()
 
-    suite.addTest(unittest.makeSuite(ASObjectTestCase))
-    suite.addTest(unittest.makeSuite(ClassMetaDataTestCase))
-    suite.addTest(unittest.makeSuite(ClassAliasTestCase))
-    suite.addTest(unittest.makeSuite(HelperTestCase))
-    suite.addTest(unittest.makeSuite(RegisterClassTestCase))
-    suite.addTest(unittest.makeSuite(UnregisterClassTestCase))
-    suite.addTest(unittest.makeSuite(ClassLoaderTestCase))
-    suite.addTest(unittest.makeSuite(TypeMapTestCase))
-    suite.addTest(unittest.makeSuite(ErrorClassMapTestCase))
-    suite.addTest(unittest.makeSuite(RegisterAliasTypeTestCase))
-    suite.addTest(unittest.makeSuite(BaseContextTestCase))
-    suite.addTest(unittest.makeSuite(TypedObjectTestCase))
+    test_cases = [
+        ASObjectTestCase,
+        ClassMetaDataTestCase,
+        ClassAliasTestCase,
+        HelperTestCase,
+        RegisterClassTestCase,
+        UnregisterClassTestCase,
+        ClassLoaderTestCase,
+        TypeMapTestCase,
+        ErrorClassMapTestCase,
+        RegisterAliasTypeTestCase,
+        BaseContextTestCase,
+        TypedObjectTestCase,
+        PackageTestCase
+    ]
+
+    for tc in test_cases:
+        suite.addTest(unittest.makeSuite(tc))
 
     return suite
 

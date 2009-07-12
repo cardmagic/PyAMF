@@ -1,5 +1,5 @@
 # Copyright (c) 2007-2009 The PyAMF Project.
-# See LICENSE for details.
+# See LICENSE.txt for details.
 
 """
 Twisted gateway tests.
@@ -18,12 +18,14 @@ from pyamf.remoting import gateway
 from pyamf.flex import messaging
 from pyamf.remoting.gateway import twisted as _twisted
 
+
 class TestService(object):
     def spam(self):
         return 'spam'
 
     def echo(self, x):
         return x
+
 
 class TwistedServerTestCase(unittest.TestCase):
     def setUp(self):
@@ -305,6 +307,7 @@ class TwistedServerTestCase(unittest.TestCase):
 
         return d.addCallback(cb)
 
+
 class DummyHTTPRequest:
     def __init__(self):
         self.headers = {}
@@ -321,6 +324,7 @@ class DummyHTTPRequest:
 
     def finish(self):
         self.finished = True
+
 
 class TwistedGatewayTestCase(unittest.TestCase):
     def test_finalise_request(self):
@@ -347,6 +351,7 @@ class TwistedGatewayTestCase(unittest.TestCase):
 
         self.assertTrue(isinstance(gw.getProcessor(a3), _twisted.AMF3RequestProcessor))
         self.assertTrue(isinstance(gw.getProcessor(a0), _twisted.AMF0RequestProcessor))
+
 
 class AMF0RequestProcessorTestCase(unittest.TestCase):
     def test_unknown_service_request(self):
@@ -543,6 +548,7 @@ class AMF0RequestProcessorTestCase(unittest.TestCase):
 
         return d
 
+
 class AMF3RequestProcessorTestCase(unittest.TestCase):
     def test_unknown_service_request(self):
         gw = _twisted.TwistedGateway({'echo': lambda x: x}, expose_request=False)
@@ -557,64 +563,6 @@ class AMF3RequestProcessorTestCase(unittest.TestCase):
         self.assertTrue(isinstance(response, remoting.Response))
         self.assertTrue(response.status, remoting.STATUS_ERROR)
         self.assertTrue(isinstance(response.body, messaging.ErrorMessage))
-
-    """
-    def test_error_auth(self):
-        def auth(u, p):
-            raise IndexError
-
-        gw = _twisted.TwistedGateway({'echo': lambda x: x},
-            expose_request=False, authenticator=auth)
-        proc = _twisted.AMF3RequestProcessor(gw)
-
-        request = remoting.Request('null', body=[messaging.RemotingMessage(body=['spam.eggs'], operation='echo')])
-
-        d = proc(request)
-
-        self.assertTrue(isinstance(d, defer.Deferred))
-        response = d.result
-        self.assertTrue(isinstance(response, remoting.Response))
-        self.assertTrue(response.status, remoting.STATUS_ERROR)
-        self.assertTrue(isinstance(response.body, remoting.ErrorFault))
-        self.assertEquals(response.body.code, 'IndexError')
-
-    def test_auth_fail(self):
-        def auth(u, p):
-            return False
-
-        gw = _twisted.TwistedGateway({'echo': lambda x: x}, authenticator=auth)
-        proc = _twisted.AMF3RequestProcessor(gw)
-
-        request = remoting.Request('echo', envelope=remoting.Envelope())
-
-        d = proc(request)
-
-        self.assertTrue(isinstance(d, defer.Deferred))
-        response = d.result
-        self.assertTrue(isinstance(response, remoting.Response))
-        self.assertTrue(response.status, remoting.STATUS_ERROR)
-        self.assertTrue(isinstance(response.body, remoting.ErrorFault))
-        self.assertEquals(response.body.code, 'AuthenticationError')
-
-    def test_deferred_auth(self):
-        d = defer.Deferred()
-
-        def auth(u, p):
-            return reactor.callLater(0, lambda: True)
-
-        gw = _twisted.TwistedGateway({'echo': lambda x: x}, authenticator=auth)
-        proc = _twisted.AMF3RequestProcessor(gw)
-
-        request = remoting.Request('echo', envelope=remoting.Envelope())
-
-        def cb(result):
-            self.assertTrue(result)
-            d.callback(None)
-
-        proc(request).addCallback(cb).addErrback(lambda failure: d.errback())
-
-        return d
-    """
 
     def test_error_preprocessor(self):
         def preprocessor(service_request, *args):
@@ -789,6 +737,7 @@ class AMF3RequestProcessorTestCase(unittest.TestCase):
         proc(request).addCallback(cb).addErrback(lambda failure: d.errback())
 
         return d
+
 
 def suite():
     import unittest

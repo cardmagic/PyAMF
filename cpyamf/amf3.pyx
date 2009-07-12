@@ -2,7 +2,7 @@
 # See LICENSE for details.
 
 """
-Python C-extensions for L{PyAMF<pyamf>}.
+C-extension for L{pyamf.amf3} Python module in L{PyAMF<pyamf>}.
 
 @since: 0.4
 """
@@ -14,12 +14,10 @@ cdef extern from "Python.h":
     object PyString_FromStringAndSize(char *buffer, Py_ssize_t length)
     object PyInt_FromLong(long v)
 
-cdef Py_ssize_t _encode_int(long n, char **buf):
-    if n < 0:
-        n += 0x20000000
 
+cdef Py_ssize_t _encode_int(long n, char **buf) except? -1:
     cdef Py_ssize_t size = 0
-    cdef long real_value = n
+    cdef unsigned long real_value = n
     cdef char changed = 0
     cdef unsigned char count = 0
     cdef char *bytes = NULL
@@ -65,9 +63,9 @@ cdef Py_ssize_t _encode_int(long n, char **buf):
 
     return size
 
-cdef long _decode_int(object stream, int sign=0):
+cdef long _decode_int(object stream, int sign=0) except? -1:
     cdef int n = 0
-    cdef long result = 0
+    cdef long result = 0 
     cdef unsigned char b = <unsigned char>stream.read_uchar()
 
     while b & 0x80 != 0 and n < 3:
@@ -92,11 +90,21 @@ cdef long _decode_int(object stream, int sign=0):
 
     return result
 
-def encode_int(long n):
+def encode_int(unsigned long n):
+    """
+    Encode C{int}.
+    
+    @raise OverflowError: Out of range.
+    """
+    """
+    Encode C{int}.
+    
+    @raise OverflowError: Out of range.
+    """
     if n >= 0x40000000:
         raise OverflowError("Out of range")
 
-    cdef char *buf
+    cdef char *buf = NULL
     cdef Py_ssize_t size = _encode_int(n, &buf)
     cdef object o = PyString_FromStringAndSize(buf, size)
 
@@ -105,4 +113,7 @@ def encode_int(long n):
     return o
 
 def decode_int(stream, sign=False):
+    """
+    Decode C{int}.
+    """
     return PyInt_FromLong(_decode_int(stream, <int>sign))

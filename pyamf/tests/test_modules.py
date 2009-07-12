@@ -1,5 +1,5 @@
 # Copyright (c) 2007-2009 The PyAMF Project.
-# See LICENSE for details.
+# See LICENSE.txt for details.
 
 """
 Specific module tests
@@ -8,6 +8,7 @@ Specific module tests
 """
 
 import unittest
+
 
 def suite():
     from glob import glob

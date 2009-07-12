@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 # Copyright (c) 2007-2009 The PyAMF Project.
-# See LICENSE for details.
+# See LICENSE.txt for details.
 
 """
 Flex compatibility tests.
@@ -14,6 +14,7 @@ import unittest
 import pyamf
 from pyamf import flex, util, amf3, amf0
 from pyamf.tests.util import check_buffer
+
 
 class ArrayCollectionTestCase(unittest.TestCase):
     def test_create(self):
@@ -83,8 +84,6 @@ class ArrayCollectionTestCase(unittest.TestCase):
         self.assertEquals(x, ['eggs'])
 
     def test_source_attr(self):
-        d = {'source': ['foo', 'bar']}
-
         s = '\n\x07Cflex.messaging.io.ArrayCollection\n\x0b\x01\rsource' \
             '\t\x05\x01\x06\x07foo\x06\x07bar\x01'
 
@@ -92,6 +91,7 @@ class ArrayCollectionTestCase(unittest.TestCase):
 
         self.assertTrue(isinstance(x, flex.ArrayCollection))
         self.assertEquals(x, ['foo', 'bar'])
+
 
 class ArrayCollectionAPITestCase(unittest.TestCase):
     def test_addItem(self):
@@ -166,6 +166,7 @@ class ArrayCollectionAPITestCase(unittest.TestCase):
         self.assertEquals(a, ['a', 'd', 'c'])
         self.assertEquals(a.length, 3)
 
+
 class ObjectProxyTestCase(unittest.TestCase):
     def test_encode(self):
         stream = util.BufferedByteStream()
@@ -209,6 +210,7 @@ class ObjectProxyTestCase(unittest.TestCase):
 
         x._amf_object = None
         self.assertEquals(x._amf_object, None)
+
 
 def suite():
     suite = unittest.TestSuite()

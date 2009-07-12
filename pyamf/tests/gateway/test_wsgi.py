@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 # Copyright (c) 2007-2009 The PyAMF Project.
-# See LICENSE for details.
+# See LICENSE.txt for details.
 
 """
 WSGI gateway tests.
@@ -13,6 +13,7 @@ import unittest
 
 from pyamf import remoting, util
 from pyamf.remoting.gateway.wsgi import WSGIGateway
+
 
 class WSGIServerTestCase(unittest.TestCase):
     def setUp(self):
@@ -148,6 +149,7 @@ class WSGIServerTestCase(unittest.TestCase):
             raise
 
         remoting.decode = self.old_method
+
 
 def suite():
     suite = unittest.TestSuite()

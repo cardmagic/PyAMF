@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 # Copyright (c) 2007-2009 The PyAMF Project.
-# See LICENSE for details.
+# See LICENSE.txt for details.
 
 """
 Tests for AMF utilities.
@@ -16,8 +16,8 @@ from StringIO import StringIO
 
 import pyamf
 from pyamf import util
-
 from pyamf.tests import util as _util
+
 
 class TimestampTestCase(unittest.TestCase):
     """
@@ -38,13 +38,10 @@ class TimestampTestCase(unittest.TestCase):
         ts = util.get_timestamp(dt)
         self.assertEqual(util.get_datetime(ts), dt)
 
+
 class StringIOProxyTestCase(unittest.TestCase):
-    """
-    """
 
     def setUp(self):
-        from StringIO import StringIO
-
         self.previous = util.StringIOProxy._wrapped_class
         util.StringIOProxy._wrapped_class = StringIO
 
@@ -88,27 +85,6 @@ class StringIOProxyTestCase(unittest.TestCase):
 
         self.assertRaises(TypeError, util.StringIOProxy, self)
 
-    def test_close(self):
-        sp = util.StringIOProxy()
-
-        sp.close()
-
-        self.assertEquals(len(sp), 0)
-        self.assertRaises(ValueError, sp.write, 'asdfasdf')
-
-    def test_flush(self):
-        sp = util.StringIOProxy('spameggs')
-
-        self.assertEquals(sp.getvalue(), 'spameggs')
-        self.assertEquals(len(sp), 8)
-        self.assertEquals(sp.tell(), 0)
-
-        sp.flush()
-
-        self.assertEquals(sp.getvalue(), 'spameggs')
-        self.assertEquals(len(sp), 8)
-        self.assertEquals(sp.tell(), 0)
-
     def test_getvalue(self):
         sp = util.StringIOProxy()
 
@@ -126,41 +102,6 @@ class StringIOProxyTestCase(unittest.TestCase):
         self.assertEquals(len(sp), 14)
         self.assertEquals(sp.read(10), 'his is a t')
         self.assertEquals(sp.read(), 'est')
-
-    def test_readline(self):
-        sp = util.StringIOProxy("this is a test\nspam and eggs")
-
-        self.assertEquals(len(sp), 28)
-        self.assertEquals(sp.getvalue(), "this is a test\nspam and eggs")
-        self.assertEquals(sp.readline(), 'this is a test\n')
-
-        self.assertEquals(len(sp), 28)
-        self.assertEquals(sp.getvalue(), "this is a test\nspam and eggs")
-        self.assertEquals(sp.readline(), 'spam and eggs')
-
-    def test_readlines(self):
-        sp = util.StringIOProxy("\n".join([
-            "line 1",
-            "line 2",
-            "line 3",
-            "line 4",
-        ]))
-
-        self.assertEquals(len(sp), 27)
-        self.assertEquals(sp.readlines(), [
-            "line 1\n",
-            "line 2\n",
-            "line 3\n",
-            "line 4",
-        ])
-
-        self.assertEquals(len(sp), 27)
-        self.assertEquals(sp.getvalue(), "\n".join([
-            "line 1",
-            "line 2",
-            "line 3",
-            "line 4",
-        ]))
 
     def test_seek(self):
         sp = util.StringIOProxy('abcdefghijklmnopqrstuvwxyz')
@@ -252,20 +193,6 @@ class StringIOProxyTestCase(unittest.TestCase):
         self.assertEquals(len(sp), 3)
         self.assertEquals(sp.tell(), 3)
 
-    def test_writelines(self):
-        lines = ["line 1", "line 2", "line 3", "line 4"]
-        sp = util.StringIOProxy()
-
-        self.assertEquals(sp.getvalue(), '')
-        self.assertEquals(len(sp), 0)
-        self.assertEquals(sp.tell(), 0)
-
-        sp.writelines(lines)
-
-        self.assertEquals(sp.getvalue(), "".join(lines))
-        self.assertEquals(len(sp), 24)
-        self.assertEquals(sp.tell(), 24)
-
     def test_len(self):
         sp = util.StringIOProxy()
 
@@ -319,6 +246,12 @@ class StringIOProxyTestCase(unittest.TestCase):
         sp.consume()
         self.assertEquals(len(sp), 0)
 
+        sp = util.StringIOProxy('abcdef')
+        sp.seek(6)
+        sp.consume()
+        self.assertEquals(sp.getvalue(), '')
+
+
 class cStringIOProxyTestCase(StringIOProxyTestCase):
     def setUp(self):
         from cStringIO import StringIO
@@ -326,8 +259,10 @@ class cStringIOProxyTestCase(StringIOProxyTestCase):
         self.previous = util.StringIOProxy._wrapped_class
         util.StringIOProxy._wrapped_class = StringIO
 
+
 class ByteStream(util.StringIOProxy, util.DataTypeMixIn):
     pass
+
 
 class DataTypeMixInTestCase(unittest.TestCase):
     endians = (util.DataTypeMixIn.ENDIAN_BIG, util.DataTypeMixIn.ENDIAN_LITTLE)
@@ -370,6 +305,7 @@ class DataTypeMixInTestCase(unittest.TestCase):
 
         self.assertRaises(OverflowError, x.write_uchar, 256)
         self.assertRaises(OverflowError, x.write_uchar, -1)
+        self.assertRaises(TypeError, x.write_uchar, 'f')
 
     def test_read_char(self):
         x = ByteStream('\x00\x7f\xff\x80')
@@ -390,6 +326,7 @@ class DataTypeMixInTestCase(unittest.TestCase):
 
         self.assertRaises(OverflowError, x.write_char, 128)
         self.assertRaises(OverflowError, x.write_char, -129)
+        self.assertRaises(TypeError, x.write_char, 'f')
 
     def test_write_ushort(self):
         x = ByteStream()
@@ -400,6 +337,7 @@ class DataTypeMixInTestCase(unittest.TestCase):
 
         self.assertRaises(OverflowError, x.write_ushort, 65536)
         self.assertRaises(OverflowError, x.write_ushort, -1)
+        self.assertRaises(TypeError, x.write_ushort, 'aa')
 
     def test_read_ushort(self):
         self._read_endian(['\x00\x00', '\x00\x00'], 'read_ushort', (), 0)
@@ -414,6 +352,7 @@ class DataTypeMixInTestCase(unittest.TestCase):
 
         self.assertRaises(OverflowError, x.write_ushort, 65537)
         self.assertRaises(OverflowError, x.write_ushort, -1)
+        self.assertRaises(TypeError, x.write_short, '\x00\x00')
 
     def test_read_short(self):
         self._read_endian(['\xe9\xd7', '\xd7\xe9'], 'read_short', (), -5673)
@@ -428,6 +367,7 @@ class DataTypeMixInTestCase(unittest.TestCase):
 
         self.assertRaises(OverflowError, x.write_ulong, 4294967296L)
         self.assertRaises(OverflowError, x.write_ulong, -1)
+        self.assertRaises(TypeError, x.write_ulong, '\x00\x00\x00\x00')
 
     def test_read_ulong(self):
         self._read_endian(['\x00\x00\x00\x00', '\x00\x00\x00\x00'], 'read_ulong', (), 0)
@@ -444,6 +384,7 @@ class DataTypeMixInTestCase(unittest.TestCase):
 
         self.assertRaises(OverflowError, x.write_long, 2147483648)
         self.assertRaises(OverflowError, x.write_long, -2147483649)
+        self.assertRaises(TypeError, x.write_long, '\x00\x00\x00\x00')
 
     def test_read_long(self):
         self._read_endian(['\x00\x00\x00\x00', '\x00\x00\x00\x00'], 'read_long', (), 0)
@@ -459,6 +400,7 @@ class DataTypeMixInTestCase(unittest.TestCase):
 
         self.assertRaises(OverflowError, x.write_24bit_uint, 16777216)
         self.assertRaises(OverflowError, x.write_24bit_uint, -1)
+        self.assertRaises(TypeError, x.write_24bit_uint, '\x00\x00\x00')
 
     def test_read_u24bit(self):
         self._read_endian(['\x00\x00\x00', '\x00\x00\x00'], 'read_24bit_uint', (), 0)
@@ -478,6 +420,7 @@ class DataTypeMixInTestCase(unittest.TestCase):
 
         self.assertRaises(OverflowError, x.write_24bit_int, 8388608)
         self.assertRaises(OverflowError, x.write_24bit_int, -8388609)
+        self.assertRaises(TypeError, x.write_24bit_int, '\x00\x00\x00')
 
     def test_read_24bit(self):
         self._read_endian(['\x00\x00\x00', '\x00\x00\x00'], 'read_24bit_int', (), 0)
@@ -490,6 +433,7 @@ class DataTypeMixInTestCase(unittest.TestCase):
         x = ByteStream()
 
         self._write_endian(x, x.write_float, (0.2,), ('>L\xcc\xcd', '\xcd\xccL>'))
+        self.assertRaises(TypeError, x.write_float, 'foo')
 
     def test_read_float(self):
         self._read_endian(['?\x00\x00\x00', '\x00\x00\x00?'], 'read_float', (), 0.5)
@@ -498,6 +442,7 @@ class DataTypeMixInTestCase(unittest.TestCase):
         x = ByteStream()
 
         self._write_endian(x, x.write_double, (0.2,), ('?\xc9\x99\x99\x99\x99\x99\x9a', '\x9a\x99\x99\x99\x99\x99\xc9?'))
+        self.assertRaises(TypeError, x.write_double, 'foo')
 
     def test_read_double(self):
         self._read_endian(['?\xc9\x99\x99\x99\x99\x99\x9a', '\x9a\x99\x99\x99\x99\x99\xc9?'], 'read_double', (), 0.2)
@@ -506,6 +451,9 @@ class DataTypeMixInTestCase(unittest.TestCase):
         x = ByteStream()
 
         self._write_endian(x, x.write_utf8_string, (u'ᚠᛇᚻ',), ['\xe1\x9a\xa0\xe1\x9b\x87\xe1\x9a\xbb'] * 2)
+        self.assertRaises(TypeError, x.write_utf8_string, 1)
+        self.assertRaises(TypeError, x.write_utf8_string, 1.0)
+        self.assertRaises(TypeError, x.write_utf8_string, object())
 
     def test_read_utf8_string(self):
         self._read_endian(['\xe1\x9a\xa0\xe1\x9b\x87\xe1\x9a\xbb'] * 2, 'read_utf8_string', (9,), u'ᚠᛇᚻ')
@@ -555,6 +503,7 @@ class DataTypeMixInTestCase(unittest.TestCase):
             '\x00\x00\x00\x00\x00\x00\xf0\xff'
         ))
 
+
 class BufferedByteStreamTestCase(unittest.TestCase):
     """
     Tests for L{BufferedByteStream<util.BufferedByteStream>}
@@ -574,12 +523,16 @@ class BufferedByteStreamTestCase(unittest.TestCase):
     def test_read(self):
         x = util.BufferedByteStream()
 
-        x.read()
-        self.assertRaises(EOFError, x.read, 10)
+        self.assertEquals(x.tell(), 0)
+        self.assertEquals(len(x), 0)
+        self.assertRaises(IOError, x.read)
+
+        self.assertRaises(IOError, x.read, 10)
 
         x.write('hello')
         x.seek(0)
         self.assertRaises(IOError, x.read, 10)
+        self.assertEquals(x.read(), 'hello')
 
     def test_peek(self):
         x = util.BufferedByteStream('abcdefghijklmnopqrstuvwxyz')
@@ -630,19 +583,195 @@ class BufferedByteStreamTestCase(unittest.TestCase):
         self.assertEquals(a.tell(), 1)
         self.assertEquals(b.tell(), 3)
 
-        c = a + b
-
         self.assertEquals(a.tell(), 1)
         self.assertEquals(b.tell(), 3)
+
+    def test_append_types(self):
+        # test non string types
+        a = util.BufferedByteStream()
+
+        self.assertRaises(TypeError, a.append, 234234)
+        self.assertRaises(TypeError, a.append, 234.0)
+        self.assertRaises(TypeError, a.append, 234234L)
+        self.assertRaises(TypeError, a.append, [])
+        self.assertRaises(TypeError, a.append, {})
+        self.assertRaises(TypeError, a.append, lambda _: None)
+        self.assertRaises(TypeError, a.append, ())
+        self.assertRaises(TypeError, a.append, object())
+
+    def test_append_string(self):
+        """
+        Test L{util.BufferedByteStream.append} with C{str} objects.
+        """
+        # test empty
+        a = util.BufferedByteStream()
+
+        self.assertEquals(a.getvalue(), '')
+        self.assertEquals(a.tell(), 0)
+        self.assertEquals(len(a), 0)
+
+        a.append('foo')
+
+        self.assertEquals(a.getvalue(), 'foo')
+        self.assertEquals(a.tell(), 0) # <-- pointer hasn't moved
+        self.assertEquals(len(a), 3)
+
+        # test pointer beginning, some data
+
+        a = util.BufferedByteStream('bar')
+
+        self.assertEquals(a.getvalue(), 'bar')
+        self.assertEquals(a.tell(), 0)
+        self.assertEquals(len(a), 3)
+
+        a.append('gak')
+
+        self.assertEquals(a.getvalue(), 'bargak')
+        self.assertEquals(a.tell(), 0) # <-- pointer hasn't moved
+        self.assertEquals(len(a), 6)
+
+        # test pointer middle, some data
+
+        a = util.BufferedByteStream('bar')
+        a.seek(2)
+
+        self.assertEquals(a.getvalue(), 'bar')
+        self.assertEquals(a.tell(), 2)
+        self.assertEquals(len(a), 3)
+
+        a.append('gak')
+
+        self.assertEquals(a.getvalue(), 'bargak')
+        self.assertEquals(a.tell(), 2) # <-- pointer hasn't moved
+        self.assertEquals(len(a), 6)
+
+        # test pointer end, some data
+
+        a = util.BufferedByteStream('bar')
+        a.seek(0, 2)
+
+        self.assertEquals(a.getvalue(), 'bar')
+        self.assertEquals(a.tell(), 3)
+        self.assertEquals(len(a), 3)
+
+        a.append('gak')
+
+        self.assertEquals(a.getvalue(), 'bargak')
+        self.assertEquals(a.tell(), 3) # <-- pointer hasn't moved
+        self.assertEquals(len(a), 6)
+
+        class Foo(object):
+            def getvalue(self):
+                return 'foo'
+
+            def __str__(self):
+                raise AttributeError()
+
+        a = util.BufferedByteStream()
+
+        self.assertEquals(a.getvalue(), '')
+        self.assertEquals(a.tell(), 0)
+        self.assertEquals(len(a), 0)
+
+        a.append(Foo())
+
+        self.assertEquals(a.getvalue(), 'foo')
+        self.assertEquals(a.tell(), 0)
+        self.assertEquals(len(a), 3)
+
+    def test_append_unicode(self):
+        """
+        Test L{util.BufferedByteStream.append} with C{unicode} objects.
+        """
+        # test empty
+        a = util.BufferedByteStream()
+
+        self.assertEquals(a.getvalue(), '')
+        self.assertEquals(a.tell(), 0)
+        self.assertEquals(len(a), 0)
+
+        a.append(u'foo')
+
+        self.assertEquals(a.getvalue(), 'foo')
+        self.assertEquals(a.tell(), 0) # <-- pointer hasn't moved
+        self.assertEquals(len(a), 3)
+
+        # test pointer beginning, some data
+
+        a = util.BufferedByteStream('bar')
+
+        self.assertEquals(a.getvalue(), 'bar')
+        self.assertEquals(a.tell(), 0)
+        self.assertEquals(len(a), 3)
+
+        a.append(u'gak')
+
+        self.assertEquals(a.getvalue(), 'bargak')
+        self.assertEquals(a.tell(), 0) # <-- pointer hasn't moved
+        self.assertEquals(len(a), 6)
+
+        # test pointer middle, some data
+
+        a = util.BufferedByteStream('bar')
+        a.seek(2)
+
+        self.assertEquals(a.getvalue(), 'bar')
+        self.assertEquals(a.tell(), 2)
+        self.assertEquals(len(a), 3)
+
+        a.append(u'gak')
+
+        self.assertEquals(a.getvalue(), 'bargak')
+        self.assertEquals(a.tell(), 2) # <-- pointer hasn't moved
+        self.assertEquals(len(a), 6)
+
+        # test pointer end, some data
+
+        a = util.BufferedByteStream('bar')
+        a.seek(0, 2)
+
+        self.assertEquals(a.getvalue(), 'bar')
+        self.assertEquals(a.tell(), 3)
+        self.assertEquals(len(a), 3)
+
+        a.append(u'gak')
+
+        self.assertEquals(a.getvalue(), 'bargak')
+        self.assertEquals(a.tell(), 3) # <-- pointer hasn't moved
+        self.assertEquals(len(a), 6)
+
+        class Foo(object):
+            def getvalue(self):
+                return u'foo'
+
+            def __str__(self):
+                raise AttributeError()
+
+        a = util.BufferedByteStream()
+
+        self.assertEquals(a.getvalue(), '')
+        self.assertEquals(a.tell(), 0)
+        self.assertEquals(len(a), 0)
+
+        a.append(Foo())
+
+        self.assertEquals(a.getvalue(), 'foo')
+        self.assertEquals(a.tell(), 0)
+        self.assertEquals(len(a), 3)
+
+
 
 class DummyAlias(pyamf.ClassAlias):
     pass
 
+
 class AnotherDummyAlias(pyamf.ClassAlias):
     pass
 
+
 class YADummyAlias(pyamf.ClassAlias):
     pass
+
 
 class ClassAliasTestCase(unittest.TestCase):
     def setUp(self):
@@ -705,13 +834,18 @@ class ClassAliasTestCase(unittest.TestCase):
 
         self.assertEquals(util.get_class_alias(B), DummyAlias)
 
+
 class TestObject(object):
     def __init__(self):
         self.name = 'test'
 
+
 class IndexedCollectionTestCase(unittest.TestCase):
     def setUp(self):
         self.collection = util.IndexedCollection()
+
+    def test_create(self):
+        self.assertTrue(self.collection.exceptions)
 
     def test_append(self):
         max = 5
@@ -720,29 +854,41 @@ class IndexedCollectionTestCase(unittest.TestCase):
             test_obj.name = i
             self.collection.append(test_obj)
 
-        self.assertEquals(max, len(self.collection.list))
+        self.assertEquals(max, len(self.collection))
+
         for i in range(0, max):
-            self.assertEquals(i, self.collection.list[i].name)
+            self.assertEquals(i, self.collection[i].name)
 
     def test_get_reference_to(self):
-        test_obj = TestObject
+        test_obj = TestObject()
+
         self.collection.append(test_obj)
         idx = self.collection.getReferenceTo(test_obj)
+
         self.assertEquals(0, idx)
         self.assertRaises(pyamf.ReferenceError, self.collection.getReferenceTo, TestObject())
 
+        self.collection.exceptions = False
+        self.assertEquals(None, self.collection.getReferenceTo(TestObject()))
+
     def test_get_by_reference(self):
-        test_obj = TestObject
+        test_obj = TestObject()
         idx = self.collection.append(test_obj)
+
         self.assertEquals(id(test_obj), id(self.collection.getByReference(idx)))
         idx = self.collection.getReferenceTo(test_obj)
+
         self.assertEquals(id(test_obj), id(self.collection.getByReference(idx)))
         self.assertRaises(TypeError, self.collection.getByReference, 'bad ref')
+
+        self.collection.exceptions = False
+        self.assertEquals(None, self.collection.getByReference(74))
 
     def test_array(self):
         test_obj = []
         idx = self.collection.append(test_obj)
         self.assertEquals(id(test_obj), id(self.collection.getByReference(idx)))
+
 
 class IndexedMapTestCase(unittest.TestCase):
     """
@@ -756,20 +902,32 @@ class IndexedMapTestCase(unittest.TestCase):
     def setUp(self):
         self.collection = util.IndexedMap()
 
+    def test_create(self):
+        self.assertTrue(self.collection.exceptions)
+
     def test_map(self):
         test_obj = TestObject()
         test_map = TestObject()
+
         ref = self.collection.map(test_obj, test_map)
+
         self.assertEquals(test_obj, self.collection.getByReference(ref))
         self.assertEquals(test_map, self.collection.getMappedByReference(ref))
+
         ref = self.collection.getReferenceTo(test_obj)
         self.assertEquals(test_obj, self.collection.getByReference(ref))
         self.assertEquals(test_map, self.collection.getMappedByReference(ref))
+
+        self.assertRaises(pyamf.ReferenceError, self.collection.getMappedByReference, 74)
+
+        self.collection.exceptions = False
+        self.assertEquals(None, self.collection.getMappedByReference(74))
 
 
 class GetAttrsTestCase(unittest.TestCase):
     def test_duplicate_keys(self):
         self.assertRaises(AttributeError, util.get_attrs, {0:0, '0':1})
+
 
 def suite():
     """

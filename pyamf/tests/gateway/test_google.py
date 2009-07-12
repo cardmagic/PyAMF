@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 # Copyright (c) 2007-2009 The PyAMF Project.
-# See LICENSE for details.
+# See LICENSE.txt for details.
 
 """
 Google Web App gateway tests.
@@ -17,6 +17,7 @@ from google.appengine.ext import webapp
 
 from pyamf import remoting
 from pyamf.remoting.gateway import google as _google
+
 
 class WebAppGatewayTestCase(unittest.TestCase):
     def setUp(self):
@@ -83,6 +84,7 @@ class WebAppGatewayTestCase(unittest.TestCase):
         self.gw.post()
 
         self.assertTrue(self.executed)
+
 
 def suite():
     suite = unittest.TestSuite()

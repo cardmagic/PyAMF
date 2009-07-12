@@ -1,5 +1,5 @@
 # Copyright (c) 2007-2009 The PyAMF Project.
-# See LICENSE for details.
+# See LICENSE.txt for details.
 
 """
 Compatibility classes/functions for Flex.
@@ -14,6 +14,7 @@ Compatibility classes/functions for Flex.
 import pyamf
 
 __all__ = ['ArrayCollection', 'ObjectProxy']
+
 
 class ArrayCollection(list):
     """
@@ -60,7 +61,8 @@ class ArrayCollection(list):
         self.extend(data)
 
     def __writeamf__(self, output):
-        output.encoder.writeList(list(self), use_references=True, _use_proxies=False)
+        output.encoder.writeList(
+            list(self), use_references=True, use_proxies=False)
 
     def _get_length(self):
         return len(self)
@@ -206,6 +208,7 @@ class ArrayCollection(list):
 pyamf.register_class(ArrayCollection, 'flex.messaging.io.ArrayCollection',
     metadata=['external', 'amf3'])
 
+
 class ObjectProxy(object):
     """
     I represent the ActionScript 3 based class C{flex.messaging.io.ObjectProxy}
@@ -241,7 +244,7 @@ class ObjectProxy(object):
         self._amf_object = input.readObject()
 
     def __writeamf__(self, output):
-        output.writeObject(self._amf_object)
+        output.writeObject(self._amf_object, use_proxies=False)
 
 pyamf.register_class(ObjectProxy, 'flex.messaging.io.ObjectProxy',
     metadata=['external', 'amf3'])

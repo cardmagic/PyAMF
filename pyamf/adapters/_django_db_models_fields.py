@@ -1,5 +1,5 @@
 # Copyright (c) 2007-2009 The PyAMF Project.
-# See LICENSE for details.
+# See LICENSE.txt for details.
 
 """
 C{django.db.models.fields} adapter module.
@@ -11,6 +11,7 @@ C{django.db.models.fields} adapter module.
 from django.db.models import fields
 
 import pyamf
+
 
 def convert_NOT_PROVIDED(x, encoder):
     """

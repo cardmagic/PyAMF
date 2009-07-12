@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 # Copyright (c) 2007-2009 The PyAMF Project.
-# See LICENSE for details.
+# See LICENSE.txt for details.
 
 """
 AMF Utilities.
@@ -9,7 +9,10 @@ AMF Utilities.
 @since: 0.1.0
 """
 
-import struct, calendar, datetime, types
+import struct
+import calendar
+import datetime
+import types
 
 import pyamf
 
@@ -18,9 +21,37 @@ try:
 except ImportError:
     from StringIO import StringIO
 
+#: XML types.
 xml_types = None
 ET = None
+#: On some Python versions retrieving a negative timestamp, like
+#: C{datetime.datetime.utcfromtimestamp(-31536000.0)} is broken.
 negative_timestamp_broken = False
+
+int_types = [int]
+str_types = [str]
+
+# py3k support
+try:
+    int_types.append(long)
+except NameError:
+    pass
+
+try:
+    str_types.append(unicode)
+except NameError:
+    pass
+
+#: Numeric types.
+int_types = tuple(int_types)
+#: String types.
+str_types = tuple(str_types)
+
+PosInf = 1e300000
+NegInf = -1e300000
+# we do this instead of float('nan') because windows throws a wobbler.
+NaN = PosInf / PosInf
+
 
 def find_xml_lib():
     """
@@ -87,6 +118,7 @@ def find_xml_lib():
 
     return xml_types
 
+
 class StringIOProxy(object):
     """
     I am a C{StringIO} type object containing byte data from the AMF stream.
@@ -123,47 +155,45 @@ class StringIOProxy(object):
         self._len_changed = False
         self._buffer.seek(0, 0)
 
-    def close(self):
-        self._buffer.close()
-        self._len = 0
-        self._len_changed = False
-
-    def flush(self):
-        self._buffer.flush()
-
     def getvalue(self):
+        """
+        Get raw data from buffer.
+        """
         return self._buffer.getvalue()
 
-    def next(self):
-        return self._buffer.next()
-
     def read(self, n=-1):
+        """
+        Reads C{n} bytes from the stream.
+        """
         bytes = self._buffer.read(n)
 
         return bytes
 
-    def readline(self):
-        line = self._buffer.readline()
-
-        return line
-
-    def readlines(self, sizehint=0):
-        """
-        @type sizehint: C{int}
-        @param sizehint: Default is 0.
-        @note: This function does not consume the buffer.
-        """
-        lines = self._buffer.readlines(sizehint)
-
-        return lines
-
     def seek(self, pos, mode=0):
+        """
+        Sets the file-pointer offset, measured from the beginning of this stream,
+        at which the next write operation will occur.
+
+        @param pos:
+        @type pos: C{int}
+        @param mode:
+        @type mode: C{int}
+        """
         return self._buffer.seek(pos, mode)
 
     def tell(self):
+        """
+        Returns the position of the stream pointer.
+        """
         return self._buffer.tell()
 
     def truncate(self, size=0):
+        """
+        Truncates the stream to the specified length.
+
+        @param size: The length of the stream, in bytes.
+        @type size: C{int}
+        """
         if size == 0:
             self._buffer = StringIOProxy._wrapped_class()
             self._len_changed = True
@@ -180,14 +210,19 @@ class StringIOProxy(object):
         self._len_changed = True
 
     def write(self, s):
+        """
+        Writes the content of the specified C{s} into this buffer.
+
+        @param s:
+        @type s:
+        """
         self._buffer.write(s)
         self._len_changed = True
 
-    def writelines(self, iterable):
-        self._buffer.writelines(iterable)
-        self._len_changed = True
-
     def _get_len(self):
+        """
+        Return total number of bytes in buffer.
+        """
         if hasattr(self._buffer, 'len'):
             self._len = self._buffer.len
 
@@ -215,22 +250,35 @@ class StringIOProxy(object):
 
         @since: 0.4
         """
-        bytes = self.read()
+        try:
+            bytes = self.read()
+        except IOError:
+            bytes = ''
+
         self.truncate()
 
         if len(bytes) > 0:
             self.write(bytes)
             self.seek(0)
 
+
 class DataTypeMixIn(object):
     """
     Provides methods for reading and writing basic data types for file-like
     objects.
+
+    @ivar endian: Byte ordering used to represent the data. Default byte order
+        is L{ENDIAN_NETWORK}.
+    @type endian: C{str}
     """
 
+    #: Network byte order
     ENDIAN_NETWORK = "!"
+    #: Native byte order
     ENDIAN_NATIVE = "@"
+    #: Little endian
     ENDIAN_LITTLE = "<"
+    #: Big endian
     ENDIAN_BIG = ">"
 
     endian = ENDIAN_NETWORK
@@ -238,14 +286,14 @@ class DataTypeMixIn(object):
     def _read(self, length):
         """
         Reads C{length} bytes from the stream. If an attempt to read past the
-        end of the buffer is made, L{EOFError} is raised.
+        end of the buffer is made, L{IOError} is raised.
         """
         bytes = self.read(length)
 
         if len(bytes) != length:
             self.seek(0 - len(bytes), 1)
 
-            raise EOFError("Tried to read %d byte(s) from the stream" % length)
+            raise IOError("Tried to read %d byte(s) from the stream" % length)
 
         return bytes
 
@@ -269,9 +317,15 @@ class DataTypeMixIn(object):
     def write_uchar(self, c):
         """
         Writes an C{unsigned char} to the stream.
-        
+
+        @param c: Unsigned char
+        @type c: C{int}
+        @raise TypeError: Unexpected type for int C{c}.
         @raise OverflowError: Not in range.
         """
+        if type(c) not in int_types:
+            raise TypeError('expected an int (got:%r)' % (type(c),))
+
         if not 0 <= c <= 255:
             raise OverflowError("Not in range, %d" % c)
 
@@ -286,9 +340,15 @@ class DataTypeMixIn(object):
     def write_char(self, c):
         """
         Write a C{char} to the stream.
-        
+
+        @param c: char
+        @type c: C{int}
+        @raise TypeError: Unexpected type for int C{c}.
         @raise OverflowError: Not in range.
         """
+        if type(c) not in int_types:
+            raise TypeError('expected an int (got:%r)' % (type(c),))
+
         if not -128 <= c <= 127:
             raise OverflowError("Not in range, %d" % c)
 
@@ -303,9 +363,15 @@ class DataTypeMixIn(object):
     def write_ushort(self, s):
         """
         Writes a 2 byte unsigned integer to the stream.
-        
+
+        @param s: 2 byte unsigned integer
+        @type s: C{int}
+        @raise TypeError: Unexpected type for int C{s}.
         @raise OverflowError: Not in range.
         """
+        if type(s) not in int_types:
+            raise TypeError('expected an int (got:%r)' % (type(s),))
+
         if not 0 <= s <= 65535:
             raise OverflowError("Not in range, %d" % s)
 
@@ -320,9 +386,15 @@ class DataTypeMixIn(object):
     def write_short(self, s):
         """
         Writes a 2 byte integer to the stream.
-        
+
+        @param s: 2 byte integer
+        @type s: C{int}
+        @raise TypeError: Unexpected type for int C{s}.
         @raise OverflowError: Not in range.
         """
+        if type(s) not in int_types:
+            raise TypeError('expected an int (got:%r)' % (type(s),))
+
         if not -32768 <= s <= 32767:
             raise OverflowError("Not in range, %d" % s)
 
@@ -337,9 +409,15 @@ class DataTypeMixIn(object):
     def write_ulong(self, l):
         """
         Writes a 4 byte unsigned integer to the stream.
-        
+
+        @param l: 4 byte unsigned integer
+        @type l: C{int}
+        @raise TypeError: Unexpected type for int C{l}.
         @raise OverflowError: Not in range.
         """
+        if type(l) not in int_types:
+            raise TypeError('expected an int (got:%r)' % (type(l),))
+
         if not 0 <= l <= 4294967295:
             raise OverflowError("Not in range, %d" % l)
 
@@ -354,9 +432,15 @@ class DataTypeMixIn(object):
     def write_long(self, l):
         """
         Writes a 4 byte integer to the stream.
-        
+
+        @param l: 4 byte integer
+        @type l: C{int}
+        @raise TypeError: Unexpected type for int C{l}.
         @raise OverflowError: Not in range.
         """
+        if type(l) not in int_types:
+            raise TypeError('expected an int (got:%r)' % (type(l),))
+
         if not -2147483648 <= l <= 2147483647:
             raise OverflowError("Not in range, %d" % l)
 
@@ -387,7 +471,14 @@ class DataTypeMixIn(object):
         Writes a 24 bit unsigned integer to the stream.
 
         @since: 0.4
+        @param n: 24 bit unsigned integer
+        @type n: C{int}
+        @raise TypeError: Unexpected type for int C{n}.
+        @raise OverflowError: Not in range.
         """
+        if type(n) not in int_types:
+            raise TypeError('expected an int (got:%r)' % (type(n),))
+
         if not 0 <= n <= 0xffffff:
             raise OverflowError("n is out of range")
 
@@ -420,7 +511,14 @@ class DataTypeMixIn(object):
         Writes a 24 bit integer to the stream.
 
         @since: 0.4
+        @param n: 24 bit integer
+        @type n: C{int}
+        @raise TypeError: Unexpected type for int C{n}.
+        @raise OverflowError: Not in range.
         """
+        if type(n) not in int_types:
+            raise TypeError('expected an int (got:%r)' % (type(n),))
+
         if not -8388608 <= n <= 8388607:
             raise OverflowError("n is out of range")
 
@@ -446,7 +544,14 @@ class DataTypeMixIn(object):
     def write_double(self, d):
         """
         Writes an 8 byte float to the stream.
+
+        @param d: 8 byte float
+        @type d: C{float}
+        @raise TypeError: Unexpected type for float C{d}.
         """
+        if not type(d) is float:
+            raise TypeError('expected a float (got:%r)' % (type(d),))
+
         self.write(struct.pack("%sd" % self.endian, d))
 
     def read_float(self):
@@ -458,7 +563,14 @@ class DataTypeMixIn(object):
     def write_float(self, f):
         """
         Writes a 4 byte float to the stream.
+
+        @param f: 4 byte float
+        @type f: C{float}
+        @raise TypeError: Unexpected type for float C{f}.
         """
+        if type(f) is not float:
+            raise TypeError('expected a float (got:%r)' % (type(f),))
+
         self.write(struct.pack("%sf" % self.endian, f))
 
     def read_utf8_string(self, length):
@@ -473,24 +585,34 @@ class DataTypeMixIn(object):
 
     def write_utf8_string(self, u):
         """
-        Writes a unicode object to the stream in UTF-8
+        Writes a unicode object to the stream in UTF-8.
+
+        @param u: unicode object
+        @raise TypeError: Unexpected type for str C{u}.
         """
+        if type(u) not in str_types:
+            raise TypeError('expected a str (got:%r)' % (type(u),))
+
         bytes = u.encode("utf8")
 
         self.write(struct.pack("%s%ds" % (self.endian, len(bytes)), bytes))
+
 
 if struct.pack('@H', 1)[0] == '\x01':
     DataTypeMixIn._system_endian = DataTypeMixIn.ENDIAN_LITTLE
 else:
     DataTypeMixIn._system_endian = DataTypeMixIn.ENDIAN_BIG
 
+
 class BufferedByteStream(StringIOProxy, DataTypeMixIn):
     """
     An extension of C{StringIO}.
 
     Features:
-     - Raises L{EOFError} if reading past end.
+     - Raises L{IOError} if reading past end.
      - Allows you to C{peek()} at the next byte.
+
+    @see: L{cBufferedByteStream<cpyamf.util.cBufferedByteStream>}
     """
 
     def __init__(self, buf=None):
@@ -504,31 +626,23 @@ class BufferedByteStream(StringIOProxy, DataTypeMixIn):
 
     def read(self, length=-1):
         """
-        Read bytes from stream.
+        Reads up to the specified number of bytes from the stream into
+        the specified byte array of specified length.
 
-        If we are at the end of the buffer, a C{EOFError} is raised.
-        If there is not enough buffer to be read and length is
-        specified C{IOError} is raised.
-
-        @param length: Number of bytes to read.
-        @type length: C{int}
-        @raise EOFError: Reading past end of stream.
-        @raise IOError: Length specified but not enough buffer
-        available.
-
-        @rtype: array of C{char}
-        @return: The bytes read from the stream.
+        @raise IOError: Attempted to read past the end of the buffer.
         """
-        if length > 0 and self.at_eof():
-            raise EOFError
-        if length > 0 and self.tell() + length > len(self):
-            raise IOError
+        if length == -1 and self.at_eof():
+            raise IOError('Attempted to read from the buffer but already at '
+                'the end')
+        elif length > 0 and self.tell() + length > len(self):
+            raise IOError('Attempted to read %d bytes from the buffer but '
+                'only %d remain' % (length, len(self) - self.tell()))
 
         return StringIOProxy.read(self, length)
 
     def peek(self, size=1):
         """
-        Looks size bytes ahead in the stream, returning what it finds,
+        Looks C{size} bytes ahead in the stream, returning what it finds,
         returning the stream pointer to its initial position.
 
         @param size: Default is 1.
@@ -554,15 +668,6 @@ class BufferedByteStream(StringIOProxy, DataTypeMixIn):
 
         return bytes
 
-    def at_eof(self):
-        """
-        Returns true if C{next.read(1)} will trigger an C{EOFError}.
-
-        @rtype: C{bool}
-        @return:
-        """
-        return self.tell() >= len(self)
-
     def remaining(self):
         """
         Returns number of remaining bytes.
@@ -571,6 +676,35 @@ class BufferedByteStream(StringIOProxy, DataTypeMixIn):
         @return: Number of remaining bytes.
         """
         return len(self) - self.tell()
+
+    def at_eof(self):
+        """
+        Returns C{True} if the internal pointer is at the end of the stream.
+
+        @rtype: C{bool}
+        """
+        return self.tell() == len(self)
+
+    def append(self, data):
+        """
+        Append data to the end of the stream. The pointer will not move if
+        this operation is successful.
+
+        @param data: The data to append to the stream.
+        @type data: C{str} or C{unicode}
+        @raise TypeError: data is not C{str} or C{unicode}
+        """
+        t = self.tell()
+
+        # seek to the end of the stream
+        self.seek(0, 2)
+
+        if hasattr(data, 'getvalue'):
+            self.write_utf8_string(data.getvalue())
+        else:
+            self.write_utf8_string(data)
+
+        self.seek(t)
 
     def __add__(self, other):
         old_pos = self.tell()
@@ -587,6 +721,7 @@ class BufferedByteStream(StringIOProxy, DataTypeMixIn):
         new.seek(0)
 
         return new
+
 
 def hexdump(data):
     """
@@ -619,6 +754,7 @@ def hexdump(data):
 
     return buf
 
+
 def get_timestamp(d):
     """
     Returns a UTC timestamp for a C{datetime.datetime} object.
@@ -638,6 +774,7 @@ def get_timestamp(d):
 
     return float('%s.%s' % (calendar.timegm(d.utctimetuple()), msec))
 
+
 def get_datetime(secs):
     """
     Return a UTC date from a timestamp.
@@ -656,7 +793,7 @@ def get_datetime(secs):
 def get_attrs(obj):
     """
     Gets a C{dict} of the attrs of an object in a predefined resolution order.
-    
+
     @raise AttributeError: A duplicate attribute was already found in this
         collection, are you mixing different key types?
     """
@@ -686,13 +823,14 @@ def get_attrs(obj):
 
     return None
 
+
 def set_attrs(obj, attrs):
     """
     A generic function which applies a collection of attributes C{attrs} to
-    object C{obj}
+    object C{obj}.
 
-    @param obj: An instance implementing the __setattr__ function
-    @param attrs: A collection implementing the iteritems function
+    @param obj: An instance implementing the C{__setattr__} function
+    @param attrs: A collection implementing the C{iteritems} function
     @type attrs: Usually a dict
     """
     f = lambda n, v: setattr(obj, n, v)
@@ -702,6 +840,7 @@ def set_attrs(obj, attrs):
 
     for k, v in attrs.iteritems():
         f(k, v)
+
 
 def get_class_alias(klass):
     for k, v in pyamf.ALIAS_TYPES.iteritems():
@@ -722,13 +861,17 @@ class IndexedCollection(object):
     referenced objects.
 
     @note: All attributes on the instance are private.
+    @ivar exceptions: If C{True} then L{ReferenceError<pyamf.ReferenceError>}
+        will be raised, otherwise C{None} will be returned.
     """
 
-    def __init__(self, use_hash=False):
+    def __init__(self, use_hash=False, exceptions=True):
         if use_hash is True:
             self.func = hash
         else:
             self.func = id
+
+        self.exceptions = exceptions
 
         self.clear()
 
@@ -752,6 +895,9 @@ class IndexedCollection(object):
         try:
             return self.list[ref]
         except IndexError:
+            if self.exceptions is False:
+                return None
+
             raise pyamf.ReferenceError("Reference %r not found" % (ref,))
 
     def getReferenceTo(self, obj):
@@ -763,24 +909,25 @@ class IndexedCollection(object):
         try:
             return self.dict[self.func(obj)]
         except KeyError:
+            if self.exceptions is False:
+                return None
+
             raise pyamf.ReferenceError("Value %r not found" % (obj,))
 
     def append(self, obj):
         """
         Appends C{obj} to this index.
 
+        @note: Uniqueness is not checked
         @return: The reference to C{obj} in this index.
         """
         h = self.func(obj)
 
-        try:
-            return self.dict[h]
-        except KeyError:
-            self.list.append(obj)
-            idx = len(self.list) - 1
-            self.dict[h] = idx
+        self.list.append(obj)
+        idx = len(self.list) - 1
+        self.dict[h] = idx
 
-            return idx
+        return idx
 
     def __eq__(self, other):
         if isinstance(other, list):
@@ -818,10 +965,13 @@ class IndexedMap(IndexedCollection):
     @since: 0.4
     """
 
-    def __init__(self, use_hash=False):
-        IndexedCollection.__init__(self, use_hash)
+    def __init__(self, use_hash=False, exceptions=True):
+        IndexedCollection.__init__(self, use_hash, exceptions)
 
     def clear(self):
+        """
+        Clears the index and mapping.
+        """
         IndexedCollection.clear(self)
 
         self.mapped = []
@@ -839,9 +989,17 @@ class IndexedMap(IndexedCollection):
         try:
             return self.mapped[ref]
         except IndexError:
+            if self.exceptions is False:
+                return None
+
             raise pyamf.ReferenceError("Reference %r not found" % ref)
 
     def append(self, obj):
+        """
+        Appends C{obj} to this index.
+
+        @return: The reference to C{obj} in this index.
+        """
         idx = IndexedCollection.append(self, obj)
         diff = (idx + 1) - len(self.mapped)
 
@@ -851,6 +1009,9 @@ class IndexedMap(IndexedCollection):
         return idx
 
     def map(self, obj, mapped_obj):
+        """
+        Maps an object.
+        """
         idx = self.append(obj)
         self.mapped[idx] = mapped_obj
 
@@ -873,10 +1034,30 @@ def is_float_broken():
     @since: 0.4
     @rtype: C{bool}
     """
-    # we do this instead of float('nan') because windows throws a wobbler.
-    nan = 1e300000/1e300000
+    global NaN
 
-    return str(nan) != str(struct.unpack("!d", '\xff\xf8\x00\x00\x00\x00\x00\x00')[0])
+    return str(NaN) != str(struct.unpack("!d", '\xff\xf8\x00\x00\x00\x00\x00\x00')[0])
+
+
+def isNaN(val):
+    """
+    @since: 0.5
+    """
+    return str(float(val)) == str(NaN)
+
+
+def isPosInf(val):
+    """
+    @since: 0.5
+    """
+    return str(float(val)) == str(PosInf)
+
+
+def isNegInf(val):
+    """
+    @since: 0.5
+    """
+    return str(float(val)) == str(NegInf)
 
 
 # init the module from here ..
@@ -889,46 +1070,57 @@ except ValueError:
     negative_timestamp_broken = True
 
 if is_float_broken():
-    import fpconst
-
     def read_double_workaround(self):
+        global PosInf, NegInf, NaN
+
+        """
+        Override the L{DataTypeMixIn.read_double} method to fix problems
+        with doubles by using the third-party C{fpconst} library.
+        """
         bytes = self.read(8)
 
         if self._is_big_endian():
             if bytes == '\xff\xf8\x00\x00\x00\x00\x00\x00':
-                return fpconst.NaN
+                return NaN
 
             if bytes == '\xff\xf0\x00\x00\x00\x00\x00\x00':
-                return fpconst.NegInf
+                return NegInf
 
             if bytes == '\x7f\xf0\x00\x00\x00\x00\x00\x00':
-                return fpconst.PosInf
+                return PosInf
         else:
             if bytes == '\x00\x00\x00\x00\x00\x00\xf8\xff':
-                return fpconst.NaN
+                return NaN
 
             if bytes == '\x00\x00\x00\x00\x00\x00\xf0\xff':
-                return fpconst.NegInf
+                return NegInf
 
             if bytes == '\x00\x00\x00\x00\x00\x00\xf0\x7f':
-                return fpconst.PosInf
+                return PosInf
 
         return struct.unpack("%sd" % self.endian, bytes)[0]
 
     DataTypeMixIn.read_double = read_double_workaround
 
     def write_double_workaround(self, d):
-        if fpconst.isNaN(d):
+        """
+        Override the L{DataTypeMixIn.write_double} method to fix problems
+        with doubles by using the third-party C{fpconst} library.
+        """
+        if type(d) is not float:
+            raise TypeError('expected a float (got:%r)' % (type(d),))
+
+        if isNaN(d):
             if self._is_big_endian():
                 self.write('\xff\xf8\x00\x00\x00\x00\x00\x00')
             else:
                 self.write('\x00\x00\x00\x00\x00\x00\xf8\xff')
-        elif fpconst.isNegInf(d):
+        elif isNegInf(d):
             if self._is_big_endian():
                 self.write('\xff\xf0\x00\x00\x00\x00\x00\x00')
             else:
                 self.write('\x00\x00\x00\x00\x00\x00\xf0\xff')
-        elif fpconst.isPosInf(d):
+        elif isPosInf(d):
             if self._is_big_endian():
                 self.write('\x7f\xf0\x00\x00\x00\x00\x00\x00')
             else:
@@ -939,6 +1131,7 @@ if is_float_broken():
     x = DataTypeMixIn.write_double
     DataTypeMixIn.write_double = write_double_workaround
     write_double_workaround.old_func = x
+
 
 try:
     from cpyamf.util import BufferedByteStream
@@ -951,9 +1144,13 @@ try:
             self._buffer = self
 
     class DataTypeMixIn(BufferedByteStream):
+        #: Network byte order
         ENDIAN_NETWORK = "!"
+        #: Native byte order
         ENDIAN_NATIVE = "@"
+        #: Little endian
         ENDIAN_LITTLE = "<"
+        #: Big endian
         ENDIAN_BIG = ">"
 except ImportError:
     pass

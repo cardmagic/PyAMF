@@ -1,14 +1,15 @@
 # -*- coding: utf-8 -*-
 #
 # Copyright (c) 2007-2009 The PyAMF Project.
-# See LICENSE for details.
+# See LICENSE.txt for details.
 
 """
 Local Shared Object implementation.
 
-Local Shared Object (LSO), sometimes known as flash cookies, is a cookie-like
-data entity used by the Flash Player and Gnash. The players allow web content
-to read and write LSO data to the computer's local drive on a per-domain basis.
+Local Shared Object (LSO), sometimes known as Adobe Flash cookies, is a
+cookie-like data entity used by the Adobe Flash Player and Gnash. The players
+allow web content to read and write LSO data to the computer's local drive on
+a per-domain basis.
 
 @see: U{Local Shared Object on WikiPedia (external)
 <http://en.wikipedia.org/wiki/Local_Shared_Object>}
@@ -27,6 +28,7 @@ HEADER_VERSION = '\x00\xbf'
 HEADER_SIGNATURE = 'TCSO\x00\x04\x00\x00\x00\x00'
 #: Padding - 4 bytes
 PADDING_BYTE = '\x00'
+
 
 def decode(stream, strict=True):
     """
@@ -93,6 +95,7 @@ def decode(stream, strict=True):
 
     return (root_name, values)
 
+
 def encode(name, values, strict=True, encoding=pyamf.AMF0):
     """
     Produces a SharedObject encoded stream based on the name and values.
@@ -146,6 +149,7 @@ def encode(name, values, strict=True, encoding=pyamf.AMF0):
 
     return stream
 
+
 def load(name_or_file):
     """
     Loads a sol file and returns a L{SOL} object.
@@ -175,6 +179,7 @@ def load(name_or_file):
 
     return s
 
+
 def save(sol, name_or_file, encoding=pyamf.AMF0):
     """
     Writes a L{SOL} object to C{name_or_file}.
@@ -201,6 +206,7 @@ def save(sol, name_or_file, encoding=pyamf.AMF0):
 
     if opened:
         f.close()
+
 
 class SOL(dict):
     """

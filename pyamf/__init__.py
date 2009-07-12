@@ -1,14 +1,14 @@
 # Copyright (c) 2007-2009 The PyAMF Project.
-# See LICENSE for details.
+# See LICENSE.txt for details.
 
 """
 B{PyAMF} provides B{A}ction B{M}essage B{F}ormat
 (U{AMF<http://en.wikipedia.org/wiki/Action_Message_Format>}) support for
-Python that is compatible with the
+Python that is compatible with the Adobe
 U{Flash Player<http://en.wikipedia.org/wiki/Flash_Player>}.
 
 @copyright: Copyright (c) 2007-2009 The PyAMF Project. All Rights Reserved.
-@contact: U{dev@pyamf.org<mailto:dev@pyamf.org>}
+@contact: U{users@pyamf.org<mailto:users@pyamf.org>}
 @see: U{http://pyamf.org}
 
 @since: October 2007
@@ -16,7 +16,8 @@ U{Flash Player<http://en.wikipedia.org/wiki/Flash_Player>}.
 @status: Production/Stable
 """
 
-import types, inspect
+import types
+import inspect
 
 from pyamf import util
 from pyamf.adapters import register_adapters
@@ -43,28 +44,32 @@ ERROR_CLASS_MAP = {}
 #: Alias mapping support
 ALIAS_TYPES = {}
 
-#: Specifies that objects are serialized using AMF for ActionScript 1.0 and 2.0.
+#: Specifies that objects are serialized using AMF for ActionScript 1.0
+#: and 2.0 that were introduced in the Adobe Flash Player 6.
 AMF0 = 0
-#: Specifies that objects are serialized using AMF for ActionScript 3.0.
+#: Specifies that objects are serialized using AMF for ActionScript 3.0
+#: that was introduced in the Adobe Flash Player 9.
 AMF3 = 3
 #: Supported AMF encoding types.
 ENCODING_TYPES = (AMF0, AMF3)
+
 
 class ClientTypes:
     """
     Typecodes used to identify AMF clients and servers.
 
-    @see: U{Flash Player on WikiPedia (external)
+    @see: U{Adobe Flash Player on WikiPedia (external)
     <http://en.wikipedia.org/wiki/Flash_Player>}
-    @see: U{Flash Media Server on WikiPedia (external)
+    @see: U{Adobe Flash Media Server on WikiPedia (external)
     <http://en.wikipedia.org/wiki/Adobe_Flash_Media_Server>}
     """
-    #: Specifies a Flash Player 6.0 - 8.0 client.
+    #: Specifies a Adobe Flash Player 6.0 - 8.0 client.
     Flash6   = 0
-    #: Specifies a FlashCom / Flash Media Server client.
+    #: Specifies a Adobe FlashCom / Flash Media Server client.
     FlashCom = 1
-    #: Specifies a Flash Player 9.0 client.
+    #: Specifies a Adobe Flash Player 9.0 client or newer.
     Flash9   = 3
+
 
 #: List of AMF client typecodes.
 CLIENT_TYPES = []
@@ -74,12 +79,15 @@ for x in ClientTypes.__dict__:
         CLIENT_TYPES.append(ClientTypes.__dict__[x])
 del x
 
+
 class UndefinedType(object):
+
     def __repr__(self):
         return 'pyamf.Undefined'
 
-#: Represents the C{undefined} value in a Flash client.
+#: Represents the C{undefined} value in a Adobe Flash Player client.
 Undefined = UndefinedType()
+
 
 class BaseError(Exception):
     """
@@ -88,21 +96,25 @@ class BaseError(Exception):
     All AMF related errors should be subclassed from this class.
     """
 
+
 class DecodeError(BaseError):
     """
     Raised if there is an error in decoding an AMF data stream.
     """
+
 
 class EOStream(BaseError):
     """
     Raised if the data stream has come to a natural end.
     """
 
+
 class ReferenceError(BaseError):
     """
     Raised if an AMF data stream refers to a non-existent object
     or string reference.
     """
+
 
 class EncodeError(BaseError):
     """
@@ -113,22 +125,33 @@ class EncodeError(BaseError):
     for more info about the empty key string array bug.
     """
 
+
 class UnknownClassAlias(BaseError):
     """
-    Raised if the AMF stream specifies a class that does not
-    have an alias.
+    Raised if the AMF stream specifies an Actionscript class that does not
+    have a Python class alias.
 
     @see: L{register_class}
     """
 
+
 class BaseContext(object):
     """
     I hold the AMF context for en/decoding streams.
+
+    @ivar objects: An indexed collection of referencable objects encountered
+        during en/decoding.
+    @type objects: L{util.IndexedCollection}
+    @ivar class_aliases: A L{dict} of C{class} to L{ClassAlias}
+    @ivar exceptions: If C{True} then reference errors will be propagated.
+    @type exceptions: C{bool}
     """
 
-    def __init__(self):
-        self.objects = util.IndexedCollection()
+    def __init__(self, exceptions=True):
+        self.objects = util.IndexedCollection(exceptions=False)
         self.clear()
+
+        self.exceptions = exceptions
 
     def clear(self):
         """
@@ -137,37 +160,32 @@ class BaseContext(object):
         self.objects.clear()
         self.class_aliases = {}
 
-    def reset(self):
-        """
-        Resets the context. This is subtly different to the
-        L{BaseContext.clear} method, which is a hard delete of the context.
-        This method is mainly used by the L{remoting api<pyamf.remoting>} to
-        handle context clearing between requests.
-        """
-        self.objects.clear()
-        self.class_aliases = {}
-
     def getObject(self, ref):
         """
         Gets an object based on a reference.
 
-        @raise ReferenceError: Unknown object reference.
+        @raise ReferenceError: Unknown object reference, if L{exceptions} is
+            C{True}, otherwise C{None} will be returned.
         """
-        try:
-            return self.objects.getByReference(ref)
-        except ReferenceError:
+        o = self.objects.getByReference(ref)
+
+        if o is None and self.exceptions:
             raise ReferenceError("Unknown object reference %r" % (ref,))
+
+        return o
 
     def getObjectReference(self, obj):
         """
         Gets a reference for an object.
-        
+
         @raise ReferenceError: Object not a valid reference,
         """
-        try:
-            return self.objects.getReferenceTo(obj)
-        except ReferenceError:
+        o = self.objects.getReferenceTo(obj)
+
+        if o is None and self.exceptions:
             raise ReferenceError("Object %r not a valid reference" % (obj,))
+
+        return o
 
     def addObject(self, obj):
         """
@@ -184,22 +202,27 @@ class BaseContext(object):
         """
         Gets a class alias based on the supplied C{klass}.
         """
-        if klass not in self.class_aliases.keys():
-            try:
-                self.class_aliases[klass] = get_class_alias(klass)
-            except UnknownClassAlias:
-                # no alias has been found yet .. check subclasses
-                alias = util.get_class_alias(klass)
+        try:
+            return self.class_aliases[klass]
+        except KeyError:
+            pass
 
-                if alias is not None:
-                    self.class_aliases[klass] = alias(klass, None)
-                else:
-                    self.class_aliases[klass] = None
+        try:
+            self.class_aliases[klass] = get_class_alias(klass)
+        except UnknownClassAlias:
+            # no alias has been found yet .. check subclasses
+            alias = util.get_class_alias(klass)
+
+            if alias is not None:
+                self.class_aliases[klass] = alias(klass, None)
+            else:
+                self.class_aliases[klass] = None
 
         return self.class_aliases[klass]
 
     def __copy__(self):
         raise NotImplementedError
+
 
 class ASObject(dict):
     """
@@ -229,10 +252,12 @@ class ASObject(dict):
     def __hash__(self):
         return id(self)
 
+
 class MixedArray(dict):
     """
     Used to be able to specify the C{mixedarray} type.
     """
+
 
 class ClassMetaData(list):
     """
@@ -303,6 +328,7 @@ class ClassMetaData(list):
 
     # TODO nick: deal with slices
 
+
 class ClassAlias(object):
     """
     Class alias.
@@ -321,8 +347,8 @@ class ClassAlias(object):
         @param klass: The class to alias.
         @type alias: C{str}
         @param alias: The alias to the class e.g. C{org.example.Person}. If the
-            value of this is C{None}, then it is worked out based on the C{klass}.
-            The anonymous tag is also added to the class.
+            value of this is C{None}, then it is worked out based on the
+            C{klass}. The anonymous tag is also added to the class.
         @type attrs: A list of attributes to encode for this class.
         @param attrs: C{list}
         @type metadata: A list of metadata tags similar to ActionScript tags.
@@ -405,8 +431,8 @@ class ClassAlias(object):
 
     def checkClass(kls, klass):
         """
-        This function is used to check the class being aliased to fits certain
-        criteria. The default is to check that the __init__ constructor does
+        This function is used to check if the class being aliased fits certain
+        criteria. The default is to check that the C{__init__} constructor does
         not pass in arguments.
 
         @since: 0.4
@@ -561,6 +587,7 @@ class ClassAlias(object):
         """
         return self.klass(*args, **kwargs)
 
+
 class TypedObject(dict):
     """
     This class is used when a strongly typed object is decoded but there is no
@@ -596,16 +623,25 @@ class TypedObject(dict):
             'corresponding __readamf__ method will be required.' % (
                 self.alias,))
 
+
 class TypedObjectClassAlias(ClassAlias):
     """
     @since: 0.4
     """
 
+    klass = TypedObject
+
+    def __init__(self, klass, alias, *args, **kwargs):
+        # klass attr is ignored
+
+        ClassAlias.__init__(self, self.klass, alias)
+
     def createInstance(self, codec=None):
-        return TypedObject(self.alias)
+        return self.klass(self.alias)
 
     def checkClass(kls, klass):
         pass
+
 
 class BaseDecoder(object):
     """
@@ -627,35 +663,18 @@ class BaseDecoder(object):
     type_map = {}
 
     def __init__(self, data=None, context=None, strict=False):
-        """
-        @type   data: L{BufferedByteStream<pyamf.util.BufferedByteStream>}
-        @param  data: Data stream.
-        @type   context: L{Context<pyamf.amf0.Context>}
-        @param  context: Context.
-        @raise TypeError: The C{context} parameter must be of
-        type L{Context<pyamf.amf0.Context>}.
-        """
-        # coerce data to BufferedByteStream
         if isinstance(data, util.BufferedByteStream):
             self.stream = data
         else:
             self.stream = util.BufferedByteStream(data)
 
-        if context == None:
+        if context is None:
             self.context = self.context_class()
-        elif isinstance(context, self.context_class):
-            self.context = context
         else:
-            raise TypeError("context must be of type %s.%s" % (
-                self.context_class.__module__, self.context_class.__name__))
+            self.context = context
 
+        self.context.exceptions = False
         self.strict = strict
-
-    def readType(self):
-        """
-        @raise NotImplementedError: Override in a subclass.
-        """
-        raise NotImplementedError
 
     def readElement(self):
         """
@@ -664,38 +683,45 @@ class BaseDecoder(object):
         @raise DecodeError: The ActionScript type is unsupported.
         @raise EOStream: No more data left to decode.
         """
+        pos = self.stream.tell()
+
         try:
-            type = self.readType()
-        except EOFError:
+            t = self.stream.read(1)
+        except IOError:
             raise EOStream
 
         try:
-            func = getattr(self, self.type_map[type])
+            func = getattr(self, self.type_map[t])
         except KeyError:
-            raise DecodeError("Unsupported ActionScript type 0x%02x" % (type,))
+            raise DecodeError("Unsupported ActionScript type %r" % (t,))
 
-        return func()
+        try:
+            return func()
+        except IOError:
+            self.stream.seek(pos)
+
+            raise
 
     def __iter__(self):
-        """
-        @raise StopIteration:
-        """
         try:
             while 1:
                 yield self.readElement()
-        except EOFError:
+        except EOStream:
             raise StopIteration
+
 
 class CustomTypeFunc(object):
     """
     Custom type mappings.
     """
+
     def __init__(self, encoder, func):
         self.encoder = encoder
         self.func = func
 
     def __call__(self, data):
         self.encoder.writeElement(self.func(data, encoder=self.encoder))
+
 
 class BaseEncoder(object):
     """
@@ -717,36 +743,26 @@ class BaseEncoder(object):
         flexibility.
     @type strict: C{bool}, default is False.
     """
+
     context_class = BaseContext
     type_map = []
 
     def __init__(self, data=None, context=None, strict=False):
-        """
-        @type   data: L{BufferedByteStream<pyamf.util.BufferedByteStream>}
-        @param  data: Data stream.
-        @type   context: L{Context<pyamf.amf0.Context>}
-        @param  context: Context.
-        @raise TypeError: The C{context} parameter must be of type
-            L{Context<pyamf.amf0.Context>}.
-        """
-        # coerce data to BufferedByteStream
         if isinstance(data, util.BufferedByteStream):
             self.stream = data
         else:
             self.stream = util.BufferedByteStream(data)
 
-        if context == None:
+        if context is None:
             self.context = self.context_class()
-        elif isinstance(context, self.context_class):
-            self.context = context
         else:
-            raise TypeError("context must be of type %s.%s" % (
-                self.context_class.__module__, self.context_class.__name__))
+            self.context = context
 
+        self.context.exceptions = False
         self._write_elem_func_cache = {}
         self.strict = strict
 
-    def writeFunc(self, obj):
+    def writeFunc(self, obj, **kwargs):
         """
         Not possible to encode functions.
 
@@ -810,6 +826,7 @@ class BaseEncoder(object):
         """
         raise NotImplementedError
 
+
 def register_class(klass, alias=None, attrs=None, attr_func=None, metadata=[]):
     """
     Registers a class to be used in the data streaming.
@@ -851,6 +868,7 @@ def register_class(klass, alias=None, attrs=None, attr_func=None, metadata=[]):
 
     return x
 
+
 def unregister_class(alias):
     """
     Deletes a class from the cache.
@@ -870,6 +888,7 @@ def unregister_class(alias):
         del CLASS_CACHE[alias]
     except KeyError:
         raise UnknownClassAlias("Unknown alias %s" % (alias,))
+
 
 def register_class_loader(loader):
     """
@@ -892,6 +911,7 @@ def register_class_loader(loader):
 
     CLASS_LOADERS.append(loader)
 
+
 def unregister_class_loader(loader):
     """
     Unregisters a class loader.
@@ -905,6 +925,7 @@ def unregister_class_loader(loader):
         raise LookupError("loader not found")
 
     del CLASS_LOADERS[CLASS_LOADERS.index(loader)]
+
 
 def get_module(mod_name):
     """
@@ -926,6 +947,7 @@ def get_module(mod_name):
         mod = getattr(mod, comp)
 
     return mod
+
 
 def load_class(alias):
     """
@@ -975,7 +997,7 @@ def load_class(alias):
 
         try:
             module = get_module(module)
-        except ImportError, AttributeError:
+        except (ImportError, AttributeError):
             # XXX What to do here?
             pass
         else:
@@ -988,6 +1010,7 @@ def load_class(alias):
 
     # All available methods for finding the class have been exhausted
     raise UnknownClassAlias("Unknown alias %s" % (alias,))
+
 
 def get_class_alias(klass):
     """
@@ -1019,6 +1042,7 @@ def get_class_alias(klass):
 
     raise UnknownClassAlias("Unknown alias %s" % (klass,))
 
+
 def has_alias(obj):
     """
     @rtype: C{bool}
@@ -1029,6 +1053,7 @@ def has_alias(obj):
         return True
     except UnknownClassAlias:
         return False
+
 
 def decode(stream, encoding=AMF0, context=None, strict=False):
     """
@@ -1050,6 +1075,7 @@ def decode(stream, encoding=AMF0, context=None, strict=False):
             yield decoder.readElement()
         except EOStream:
             break
+
 
 def encode(*args, **kwargs):
     """
@@ -1080,8 +1106,10 @@ def encode(*args, **kwargs):
 
     return stream
 
+
 def get_decoder(encoding, data=None, context=None, strict=False):
     return _get_decoder_class(encoding)(data=data, context=context, strict=strict)
+
 
 def _get_decoder_class(encoding):
     """
@@ -1106,12 +1134,14 @@ def _get_decoder_class(encoding):
 
     raise ValueError("Unknown encoding %s" % (encoding,))
 
+
 def get_encoder(encoding, data=None, context=None, strict=False):
     """
     Returns a subclassed instance of L{pyamf.BaseEncoder}, based on C{encoding}
     """
     return _get_encoder_class(encoding)(data=data, context=context,
         strict=strict)
+
 
 def _get_encoder_class(encoding):
     """
@@ -1136,8 +1166,10 @@ def _get_encoder_class(encoding):
 
     raise ValueError("Unknown encoding %s" % (encoding,))
 
-def get_context(encoding):
-    return _get_context_class(encoding)()
+
+def get_context(encoding, **kwargs):
+    return _get_context_class(encoding)(**kwargs)
+
 
 def _get_context_class(encoding):
     """
@@ -1162,6 +1194,7 @@ def _get_context_class(encoding):
 
     raise ValueError("Unknown encoding %s" % (encoding,))
 
+
 def flex_loader(alias):
     """
     Loader for L{Flex<pyamf.flex>} framework compatibility classes.
@@ -1183,6 +1216,7 @@ def flex_loader(alias):
     except KeyError:
         raise UnknownClassAlias(alias)
 
+
 def add_type(type_, func=None):
     """
     Adds a custom type to L{TYPE_MAP}. A custom type allows fine grain control
@@ -1191,6 +1225,7 @@ def add_type(type_, func=None):
     @raise TypeError: Unable to add as a custom type (expected a class or callable).
     @raise KeyError: Type already exists.
     """
+
     def _check_type(type_):
         if not (isinstance(type_, (type, types.ClassType)) or callable(type_)):
             raise TypeError('Unable to add \'%r\' as a custom type (expected a class or callable)' % (type_,))
@@ -1209,6 +1244,7 @@ def add_type(type_, func=None):
 
     TYPE_MAP[type_] = func
 
+
 def get_type(type_):
     """
     Gets the declaration for the corresponding custom type.
@@ -1224,6 +1260,7 @@ def get_type(type_):
 
     raise KeyError("Unknown type %r" % (type_,))
 
+
 def remove_type(type_):
     """
     Removes the custom type declaration.
@@ -1235,6 +1272,7 @@ def remove_type(type_):
     del TYPE_MAP[type_]
 
     return declaration
+
 
 def add_error_class(klass, code):
     """
@@ -1269,6 +1307,7 @@ def add_error_class(klass, code):
 
     ERROR_CLASS_MAP[code] = klass
 
+
 def remove_error_class(klass):
     """
     Removes a class from C{ERROR_CLASS_MAP}.
@@ -1291,6 +1330,7 @@ def remove_error_class(klass):
 
     del ERROR_CLASS_MAP[klass]
 
+
 def register_alias_type(klass, *args):
     """
     This function allows you to map subclasses of L{ClassAlias} to classes
@@ -1312,6 +1352,7 @@ def register_alias_type(klass, *args):
     @raise ValueError: New aliases must subclass L{pyamf.ClassAlias}.
     @raise ValueError: At least one type must be supplied.
     """
+
     def check_type_registered(arg):
         # FIXME: Create a reverse index of registered types and do a quicker lookup
         for k, v in ALIAS_TYPES.iteritems():
@@ -1340,6 +1381,130 @@ def register_alias_type(klass, *args):
             check_type_registered(arg)
 
     ALIAS_TYPES[klass] = args
+
+
+def register_package(module=None, package=None, separator='.', ignore=[], strict=True):
+    """
+    This is a helper function that takes the concept of Actionscript packages
+    and registers all the classes in the supplied Python module under that
+    package. It auto-aliased all classes in C{module} based on C{package}.
+
+    e.g. C{mymodule.py}::
+        class User(object):
+            pass
+
+        class Permission(object):
+            pass
+
+    >>> import mymodule
+    >>> pyamf.register_package(mymodule, 'com.example.app')
+
+    Now all instances of C{mymodule.User} will appear in Actionscript under the
+    alias 'com.example.app.User'. Same goes for C{mymodule.Permission} - the
+    Actionscript alias is 'com.example.app.Permission'. The reverse is also
+    true, any objects with the correct aliases will now be instances of the
+    relevant Python class.
+
+    This function respects the C{__all__} attribute of the module but you can
+    have further control of what not to auto alias by populating the C{ignore}
+    argument.
+
+    This function provides the ability to register the module it is being
+    called in, an example:
+
+    >>> class Foo:
+    ...     pass
+    ...
+    >>> class Bar:
+    ...     pass
+    ...
+    >>> import pyamf
+    >>> pyamf.register_package('foo')
+
+    @param module: The Python module that will contain all the classes to
+        auto alias.
+    @type module: C{module} or C{dict}
+    @param package: The base package name. e.g. 'com.example.app'. If this
+        is C{None} then the value is inferred from module.__name__.
+    @type package: C{str} or C{unicode} or C{None}
+    @param separator: The separator used to append to C{package} to form the
+        complete alias.
+    @type separator: C{str}
+    @param ignore: To give fine grain control over what gets aliased and what
+        doesn't, supply a list of classes that you B{do not} want to be aliased.
+    @type ignore: C{iterable}
+    @param strict: If this value is C{True} then only classes that originate
+        from C{module} will be registered, all others will be left in peace.
+    @type strict: C{bool}
+    @return: A collection of all the classes that were registered and their
+        respective L{ClassAlias} objects.
+    @since: 0.5
+    """
+    def check_attr(attr):
+        if not isinstance(attr, (types.ClassType, types.TypeType)):
+            return False
+
+        if attr.__name__ in ignore:
+            return False
+
+        try:
+            if strict and attr.__module__ != module.__name__:
+                return False
+        except AttributeError:
+            return False
+
+        return True
+
+    if module is None and package is None:
+        import inspect
+
+        prev_frame = inspect.stack()[1][0]
+        module = prev_frame.f_locals
+        package = module['__name__']
+    elif isinstance(module, basestring):
+        if module == '':
+            raise TypeError('Cannot get list of classes from %r' % (module,))
+
+        import inspect
+
+        prev_frame = inspect.stack()[1][0]
+        package = module
+        module = prev_frame.f_locals
+    elif package is None:
+        try:
+            package = module.__name__
+        except AttributeError:
+            raise TypeError('Cannot get list of classes from %r' % (module,))
+
+    keys = None
+
+    if hasattr(module, '__all__'):
+        keys = module.__all__
+    elif hasattr(module, '__dict__'):
+        keys = module.__dict__.keys()
+    elif hasattr(module, 'keys'):
+        keys = module.keys()
+    else:
+        raise TypeError('Cannot get list of classes from %r' % (module,))
+
+    if type(module) is dict:
+        d = module.__getitem__
+    else:
+        d = lambda x: getattr(module, x)
+
+    # gotta love python
+    classes = filter(check_attr, [d(x) for x in keys])
+
+    registered = {}
+
+    for klass in classes:
+        alias = '%s%s%s' % (package, separator, klass.__name__)
+
+        registered[klass] = register_class(klass, alias)
+
+    return registered
+
+# init module here
 
 register_class_loader(flex_loader)
 register_adapters()

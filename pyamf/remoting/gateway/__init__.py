@@ -1,5 +1,5 @@
 # Copyright (c) 2007-2009 The PyAMF Project.
-# See LICENSE for details.
+# See LICENSE.txt for details.
 
 """
 Remoting server implementations.
@@ -7,23 +7,30 @@ Remoting server implementations.
 @since: 0.1.0
 """
 
-import sys, types
+import sys
+import types
 
 import pyamf
-from pyamf import remoting, logging, util
+from pyamf import remoting, util
 
-SERVER_NAME = 'PyAMF/%s Python/%s' % (
-    '.'.join(map(lambda x: str(x), pyamf.__version__)),
+try:
+    from platform import python_implementation
+    impl = python_implementation()
+except ImportError:
+    impl = 'Python'
+
+SERVER_NAME = 'PyAMF/%s %s/%s' % (
+    '.'.join(map(lambda x: str(x), pyamf.__version__)), impl,
     '.'.join(map(lambda x: str(x), sys.version_info[0:3]))
 )
 
 fault_alias = pyamf.get_class_alias(remoting.ErrorFault)
 
+
 class BaseServiceError(pyamf.BaseError):
     """
     Base service error.
     """
-
 
 pyamf.register_class(BaseServiceError, attrs=fault_alias.attrs)
 del fault_alias
@@ -503,6 +510,7 @@ class BaseGateway(object):
 
         return service_request(*args)
 
+
 def authenticate(func, c, expose_request=False):
     """
     A decorator that facilitates authentication per method. Setting
@@ -531,6 +539,7 @@ def authenticate(func, c, expose_request=False):
 
     return func
 
+
 def expose_request(func):
     """
     A decorator that adds an expose_request flag to the underlying callable.
@@ -546,6 +555,7 @@ def expose_request(func):
         setattr(func, '_pyamf_expose_request', True)
 
     return func
+
 
 def preprocess(func, c, expose_request=False):
     """
@@ -574,6 +584,7 @@ def preprocess(func, c, expose_request=False):
     setattr(attr, '_pyamf_preprocessor', c)
 
     return func
+
 
 def format_exception():
     import traceback
