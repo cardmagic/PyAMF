@@ -1696,7 +1696,7 @@ class ComplexEncodingTestCase(unittest.TestCase, _util.BaseEncoderMixIn):
 
         self.assertEquals(class_defs, {0: cd, 1: cd2})
         self.assertEquals(classes, {self.TestSubObject: cd, dict: cd2})
-        self.assertEquals(cd2.reference, '\x0b')
+        self.assertEquals(cd2.reference, '\x05')
 
         self.encoder.writeElement({})
 
