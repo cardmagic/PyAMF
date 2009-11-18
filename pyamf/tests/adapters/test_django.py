@@ -427,6 +427,36 @@ class ForeignKeyTestCase(ModelsBaseTestCase):
         self.assertEquals(sa, {'id': None})
         self.assertEquals(da, None)
 
+    def test_static_relation(self):
+        """
+        @see: #693
+        """
+        from django.db import models
+        from pyamf import util
+
+        class Gak(models.Model):
+            pass
+
+        class Baz(models.Model):
+            gak = models.ForeignKey(Gak)
+
+            class __amf__:
+                static = ('gak',)
+
+        self.resetDB()
+
+        alias = self.adapter.DjangoClassAlias(Baz, **util.get_class_meta(Baz))
+
+        alias.compile()
+
+        self.assertTrue('gak' in alias.relations)
+        self.assertTrue('gak' in alias.decodable_properties)
+        self.assertTrue('gak' in alias.static_attrs)
+
+        x = Baz()
+
+        alias.getDecodableAttributes(x, {'id': None, 'gak': 'foo'})
+
 
 class I18NTestCase(ModelsBaseTestCase):
     def test_encode(self):
@@ -509,6 +539,22 @@ class PKTestCase(ModelsBaseTestCase):
         })
 
         self.assertEquals(x.id, None)
+
+    def test_no_pk(self):
+        """
+        Ensure that Models without a primary key are correctly serialized.
+        See #691.
+        """
+        from django.db import models
+
+        class NotSaved(models.Model):
+            name = models.CharField(max_length=100)
+
+        instances = [NotSaved(name="a"), NotSaved(name="b")]
+        encoded = pyamf.encode(instances, encoding=pyamf.AMF3).getvalue()
+        decoded = pyamf.get_decoder(pyamf.AMF3, encoded).readElement()
+        self.assertEquals(decoded[0]['name'], 'a')
+        self.assertEquals(decoded[1]['name'], 'b')
 
 
 class ModelInheritanceTestCase(ModelsBaseTestCase):
