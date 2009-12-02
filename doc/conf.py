@@ -56,9 +56,6 @@ today_fmt = '%B %d, %Y'
 # List of documents that shouldn't be included in the build.
 #unused_docs = []
 
-# copy the examples to the tutorials folder
-
-
 # A list of directory paths, relative to the source directory, that are to
 # be recursively excluded from the search for source files, that is, their
 # subdirectories won’t be searched too.
