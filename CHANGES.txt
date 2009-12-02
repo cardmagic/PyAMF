@@ -20,95 +20,100 @@ versions of PyAMF.
 
 0.5.1 (2009-09-19)
 ------------------
- - pyamf.register_package can now accept a list of classes (Ticket:650)
- - Fixed a regression in TwistedGateway where services would be called twice
-   (Ticket:648)
+ - ``pyamf.register_package`` can now accept a list of classes (Ticket:650)
+ - Fixed a regression in ``TwistedGateway`` where services would be called
+   twice (Ticket:648)
  - Fixed a bug with encoding anonymous trait references (Ticket:644)
- - Moved IndexedCollection into cpyamf (Ticket:424)
- - amf3.encode_int now encodes signed 29bit ints, not unsigned. Thanks to
-   gerard for the report, investigation and patch! (Ticket:646)
+ - Moved ``IndexedCollection`` into ``cpyamf`` (Ticket:424)
+ - ``amf3.encode_int`` now encodes signed 29bit ints, not unsigned. Thanks
+   to gerard for the report, investigation and patch! (Ticket:646)
 
 0.5 (2009-09-07)
 ----------------
  - Added the ability to modify the timezones of dates being de/encoded for
    legacy systems. (Ticket:612)
- - Fixed a Django reference bug where parent.child.parent is parent would
-   encode 3 objects and not 2. (Ticket:642)
- - Setting `None` on a Django DateField would blow up the encoder (Ticket:632)
- - `rootCause` in ErrorFault objects are now populated with the traceback
-   object. (Ticket:637)
+ - Fixed a Django reference bug where ``parent.child.parent`` is parent
+   would encode 3 objects and not 2. (Ticket:642)
+ - Setting ``None`` on a Django ``DateField`` would blow up the encoder
+   (Ticket:632)
+ - ``rootCause`` in ``ErrorFault`` objects are now populated with the
+   traceback object. (Ticket:637)
  - Support for encoding/decoding BlazeDS specific messages (Ticket:581)
- - Removed tracebacks from exception messages if debug=False (Ticket:552)
- - Support for google.appengine.ext.db.polymodel.PolyModel (Ticket:633)
- - Support for Django File/ImageField (Ticket:631)
+ - Removed tracebacks from exception messages if ``debug=False`` (Ticket:552)
+ - Support for ``google.appengine.ext.db.polymodel.PolyModel`` (Ticket:633)
+ - Support for Django ``File``/``ImageField`` (Ticket:631)
  - Support for Django model inheritance (Ticket:626)
  - Rewrote attribute handling code. Added the ability to exclude, set
-   read-only and static attributes. See http://pyamf.org/wiki/AttributeControl
-   for more details. (Ticket:601)
- - Exposed the amf request object if expose_request=True.
-   Twisted/Django/Google have an amf_request property on the http request
-   object.  WSGI has an entry in the environ dict - pyamf.request (Ticket:234)
- - Added support for the `array` module (Ticket:468)
- - Fixed an issue with Django model AutoFields being set to 0 by the Flex
+   read-only and static attributes. See
+   http://docs.pyamf.org/current/architecture/attributecontrol.html for more
+   details. (Ticket:601)
+ - Exposed the amf request object if ``expose_request=True``.
+   Twisted/Django/Google have an ``amf_request`` property on the http request
+   object.  WSGI has an entry in the environ dict now - ``pyamf.request``
+   (Ticket:234)
+ - Added support for the ``array`` module (Ticket:468)
+ - Fixed an issue with Django model ``AutoFields`` being set to 0 by the Flex
    client (Ticket:556)
- - Added support for the collections module. (Ticket:474)
+ - Added support for the ``collections`` module. (Ticket:474)
  - Added type checks for class objects. (Ticket:473)
- - GAE FloatProperty can now accept int's without issue (Ticket:609)
- - Revamped the lazy imports module to use sys.meta_path instead. Fixes all
-   erroneous import errors (Ticket:485).
+ - GAE ``FloatProperty`` can now accept int's without issue (Ticket:609)
+ - Revamped the lazy imports module to use ``sys.meta_path`` instead. Fixes
+   all erroneous import errors (Ticket:485).
  - Django models will now accept dynamic properties (Ticket:575)
  - Django PK properties will be set first to allow related properties to apply
    correctly (Ticket:599)
- - p.r.encode/p.r.decode both have a new logger kwarg. Supply a logging.Logger
-   instance if you want to see debug output (Ticket:588)
- - pyamf.TypedObjectClassAlias now forces the class type (Ticket:537)
- - If a call to Decoder.readElement results in an IOError exception, the
-   original position of the stream will be restored (Ticket:573)
+ - p.r.encode/p.r.decode both have a new ``logger`` kwarg. Supply a
+   ``logging.Logger`` instance if you want to see debug output (Ticket:588)
+ - ``pyamf.TypedObjectClassAlias`` now forces the class type (Ticket:537)
+ - If a call to ``Decoder.readElement`` results in an ``IOError`` exception,
+   the original position of the stream will be restored (Ticket:573)
  - Replaced hardcoded Python implementation title in p.r.gateway.SERVER_NAME
    (Ticket:541)
- - Provide a user friendly way to handle datetime.time objects (Ticket:498)
- - Removed the useless pyamf.logging module (Ticket:577)
- - Added a new register_package helper function to make bulk class
+ - Provide a user friendly way to handle ``datetime.time`` objects (Ticket:498)
+ - Removed the useless ``pyamf.logging`` module (Ticket:577)
+ - Added a new ``register_package`` helper function to make bulk class
    registration easier. Check the docstring for more info. (Ticket:576)
- - cpyamf.amf3._decode_int now propagates exceptions correctly (Ticket:506)
- - Fixed an incorrect OverflowError when encoding large integers in AMF3
+ - ``cpyamf.amf3._decode_int`` now propagates exceptions correctly (Ticket:506)
+ - Fixed an incorrect ``OverflowError`` when encoding large integers in AMF3
    (Ticket:519)
- - Added `append` to pyamf.util.BufferedByteStream (Ticket:574)
- - Added Epydoc signatures to all util.StringIOProxy, util.DataTypeMixIn and
-   util.BufferedByteStream classes (Ticket:440)
- - Removed dependancy on fpconst. Platforms with broken platforms are detected
-   and handled correctly internally (Ticket:564)
- - amf0.Encoder now supports attribute ordering (Ticket:558)
- - Removed duplicate method Context.reset, in favour of Context.clear
+ - Added ``append`` to ``pyamf.util.BufferedByteStream`` (Ticket:574)
+ - Added Epydoc signatures to all ``util.StringIOProxy``, ``util.DataTypeMixIn``
+   and ``util.BufferedByteStream`` classes (Ticket:440)
+ - Removed dependancy on ``fpconst``. Platforms with broken platforms are
+   detected and handled correctly internally (Ticket:564)
+ - ``amf0.Encoder`` now supports attribute ordering (Ticket:558)
+ - Removed duplicate method ``Context.reset``, in favour of ``Context.clear``
    (Ticket:527)
- - Rewrote cpyamf.util.BufferedByteStream to not depend on cStringIO. Added a
-   C based api for stream functions (Ticket:513)
- - Unified exceptions for BufferedByteStream so that only IOError is raised.
-   (Ticket:520)
- - Made raising pyamf.ReferenceError optional for all Indexed* and Context
-   classes. Refactored AMF3 so that only one ClassDefinition is created per
-   class (Ticket:524)
- - Strict type checking now on pyamf.util.BufferedByteStream (Ticket:512)
+ - Rewrote ``cpyamf.util.BufferedByteStream`` to not depend on ``cStringIO``.
+   Added a C based api for stream functions (Ticket:513)
+ - Unified exceptions for ``BufferedByteStream`` so that only ``IOError``
+   is raised. (Ticket:520)
+ - Made raising ``pyamf.ReferenceError`` optional for all Indexed* and
+   ``Context`` classes. Refactored AMF3 so that only one ``ClassDefinition``
+   is created per class (Ticket:524)
+ - Strict type checking now on ``pyamf.util.BufferedByteStream`` (Ticket:512)
  - Removed the default loggers from p.r.gateway.*. To re-enable supply a
-   logger instance as a keyword arg to the gateway constructor (Ticket:525)
- - Removed pyamf.util.make_classic_instance (as it is not used) (Ticket:521)
- - Removed pyamf.util.get_mro, in favour of inspect.getmro (Ticket:526)
- - Removed pyamf.util.Indexed[Collection|Map].remove (Ticket:518)
+   ``logger instance`` as a keyword arg to the gateway constructor (Ticket:525)
+ - Removed ``pyamf.util.make_classic_instance`` (as it is not used)
+   (Ticket:521)
+ - Removed ``pyamf.util.get_mro``, in favour of ``inspect.getmro`` (Ticket:526)
+ - Removed ``pyamf.util.Indexed[Collection|Map].remove`` (Ticket:518)
 
 0.4.2 (2009-04-20)
 ------------------
- - Support for decoding the 'source' property on ArrayCollections (Ticket:488)
+ - Support for decoding the ``source`` property on ``ArrayCollection``
+   (Ticket:488)
  - Fixed an issue in the GAE adapter where dynamic properties would be missing
    on referenced objects. (Ticket:511)
  - Fixed a critical issue with AMF0 reference counting when encoding remoting
    responses. (Ticket:510)
- - Strengthened http header handling in the client (Ticket:492)
- - Support for Django i18n ugettext_lazy (Ticket:496)
+ - Strengthened HTTP header handling in the client (Ticket:492)
+ - Support for Django i18n ``ugettext_lazy`` (Ticket:496)
  - Added support for microseconds for datetime objects. Thanks to Derek Payton
    for the patch. (Ticket:490)
  - Added support for property types on SQLAlchemy mapped classes. (Ticket:491)
- - Added support for property types for Google AppEngine db.Model and
-   db.Expando. (Ticket:487)
+ - Added support for property types for Google AppEngine ``db.Model`` and
+   ``db.Expando``. (Ticket:487)
 
 0.4.1 (2009-02-23)
 ------------------
