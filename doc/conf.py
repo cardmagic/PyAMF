@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 #
+# Copyright (c) 2009 The PyAMF Project.
+# See LICENSE.txt for details.
+#
 # PyAMF documentation build configuration file.
 #
 # This file is execfile()d with the current directory set to its containing dir.
@@ -27,9 +30,9 @@ source_suffix = '.rst'
 #master_doc = 'index'
 
 # create content template for the homepage
-from util import rst2html, copyrst
+from util import rst2html, copy_file
 readme = rst2html('../README.txt', 'html/intro.html')
-readme = copyrst('../CHANGES.txt', 'changelog.rst')
+readme = copy_file('../CHANGES.txt', 'changelog.rst')
 
 # Location of the PyAMF source root folder.
 sys.path.insert(0, os.path.abspath('../pyamf'))
