@@ -975,6 +975,9 @@ class Decoder(pyamf.BaseDecoder):
             if obj is None:
                 raise pyamf.ReferenceError('Unknown reference %d' % (ref >> 1,))
 
+            if use_proxies is True:
+                obj = self.readProxyObject(obj)
+
             return obj
 
         ref >>= 1
