@@ -63,9 +63,9 @@ qthelp:
 	@echo
 	@echo "Build finished; now you can run "qcollectiongenerator" with the" \
 	      ".qhcp project file in $(BUILDDIR)/qthelp, like this:"
-	@echo "# qcollectiongenerator $(BUILDDIR)/qthelp/Thijs.qhcp"
+	@echo "# qcollectiongenerator $(BUILDDIR)/qthelp/pyamf.qhcp"
 	@echo "To view the help file:"
-	@echo "# assistant -collectionFile $(BUILDDIR)/qthelp/Thijs.qhc"
+	@echo "# assistant -collectionFile $(BUILDDIR)/qthelp/pyamf.qhc"
 
 latex:
 	$(SPHINXBUILD) -b latex $(ALLSPHINXOPTS) $(BUILDDIR)/latex
@@ -89,3 +89,16 @@ doctest:
 	$(SPHINXBUILD) -b doctest $(ALLSPHINXOPTS) $(BUILDDIR)/doctest
 	@echo "Testing of doctests in the sources finished, look at the " \
 	      "results in $(BUILDDIR)/doctest/output.txt."
+
+dist:
+	-rm -rf dist
+	mkdir -p dist
+
+	# archive the HTML
+	make html
+	cp -pPR $(SPHINXBUILD)/html dist/pyamf-docs-html
+	tar -C dist -cf dist/pyamf-docs-html.tar pyamf-docs-html
+	bzip2 -9 -k dist/pyamf-docs-html.tar
+	(cd dist; zip -q -r -9 pyamf-docs-html.zip pyamf-docs-html)
+	rm -r dist/pyamf-docs-html
+	rm dist/pyamf-docs-html.tar
