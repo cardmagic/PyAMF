@@ -18,6 +18,7 @@ import sys, os, time
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute.
 sys.path.append(os.path.abspath('.'))
+sys.path.append(os.path.abspath('..'))
 sys.path.append(os.path.abspath('../pyamf'))
 sys.path.append(os.path.abspath('html'))
 
