@@ -1281,11 +1281,6 @@ class DataOutputTestCase(unittest.TestCase):
         self.assertEquals(self.stream.getvalue(), '\t\x00')
         self.stream.truncate()
 
-        # check force no references, should include class def ref and refs to
-        # string
-        x.writeObject(obj, False)
-        self.assertEquals(self.stream.getvalue(), '\t\x01\x00\x06\x02\x01')
-
     def test_object_proxy(self):
         self.encoder.use_proxies = True
         x = amf3.DataOutput(self.encoder)
