@@ -77,11 +77,9 @@ class ContextTestCase(_util.ClassCacheClearingTestCase):
         self.assertEquals(c.objects, [])
         self.assertEquals(c.classes, {})
         self.assertEquals(c.legacy_xml, [])
-        self.assertEquals(c.object_aliases, [])
         self.assertEquals(len(c.strings), 0)
         self.assertEquals(len(c.classes), 0)
         self.assertEquals(len(c.legacy_xml), 0)
-        self.assertEquals(len(c.object_aliases), 0)
 
     def test_add_object(self):
         x = amf3.Context()
@@ -121,25 +119,6 @@ class ContextTestCase(_util.ClassCacheClearingTestCase):
         self.assertEquals(x.addLegacyXML(y), 0)
         self.assertTrue(y in x.legacy_xml)
         self.assertEquals(len(x.legacy_xml), 1)
-
-    def test_set_object_alias(self):
-        x = amf3.Context()
-        obj = {'label': 'original'}
-        alias = {'label': 'aliased'}
-
-        x.setObjectAlias(obj, alias)
-        self.assertEquals(len(x.object_aliases), 1)
-
-    def test_get_object_alias(self):
-        x = amf3.Context()
-        obj = {'label': 'original'}
-        alias = {'label': 'aliased'}
-
-        x.setObjectAlias(obj, alias)
-        self.assertEquals(alias, x.getObjectAlias(obj))
-        self.assertEquals('aliased', x.getObjectAlias(obj)['label'])
-
-        self.assertEquals(x.getObjectAlias(object()), None)
 
     def test_clear(self):
         x = amf3.Context()
@@ -358,15 +337,6 @@ class EncoderTestCase(_util.ClassCacheClearingTestCase):
             (y, '\x09\x09\x01\x04\x00\x04\x01\x04\x02\x04\x03'),
             (y, '\x09\x00'),
             (y, '\x09\x00')])
-
-    def test_list_proxy_references(self):
-        self.encoder.use_proxies = True
-        y = [0, 1, 2, 3]
-        self._run([
-            (y, '\n\x07Cflex.messaging.io.ArrayCollection\t\t\x01\x04\x00'
-                '\x04\x01\x04\x02\x04\x03'),
-            (y, '\n\x00'),
-            (y, '\n\x00')])
 
     def test_dict(self):
         self._run([
@@ -651,25 +621,6 @@ class EncoderTestCase(_util.ClassCacheClearingTestCase):
 
         self.assertRaises(pyamf.EncodeError, self.encoder.writeElement, Classic)
         self.assertRaises(pyamf.EncodeError, self.encoder.writeElement, New)
-
-    def test_proxy(self):
-        """
-        Test to ensure that only C{dict} objects will be proxied correctly
-        """
-        x = pyamf.ASObject()
-
-        self.encoder.use_proxies = True
-        self.encoder.writeElement(x)
-
-        self.assertEquals(self.buf.getvalue(), '\n\x0b\x01\x01')
-
-        self.buf.truncate()
-        x = dict()
-
-        self.encoder.writeElement(x)
-
-        self.assertEquals(self.buf.getvalue(), '\n\x07;flex.messaging.io.'
-            'ObjectProxy\n\x0b\x01\x01')
 
     def test_timezone(self):
         d = datetime.datetime(2009, 9, 24, 14, 23, 23)
@@ -993,14 +944,6 @@ class DecoderTestCase(_util.ClassCacheClearingTestCase):
         self.assertEquals(foo.family_name, 'Doe')
         self.assertEquals(foo.given_name, 'Jane')
         self.assertEquals(self.buf.remaining(), 0)
-
-    def test_default_proxy_flag(self):
-        amf3.use_proxies_default = True
-        decoder = amf3.Decoder(self.buf, context=self.context)
-        self.assertTrue(decoder.use_proxies)
-        amf3.use_proxies_default = False
-        decoder = amf3.Decoder(self.buf, context=self.context)
-        self.assertFalse(decoder.use_proxies)
 
     def test_ioerror_buffer_position(self):
         """
@@ -1345,46 +1288,6 @@ class DataOutputTestCase(unittest.TestCase):
         # string
         x.writeObject(obj, False)
         self.assertEquals(self.stream.getvalue(), '\t\x01\x00\x06\x02\x01')
-
-    def test_object_proxy(self):
-        self.encoder.use_proxies = True
-        x = amf3.DataOutput(self.encoder)
-        obj = {'spam': 'eggs'}
-
-        x.writeObject(obj)
-        self.assertEquals(self.stream.getvalue(),
-            '\n\x07;flex.messaging.io.ObjectProxy\n\x0b\x01\tspam\x06\teggs\x01')
-        self.stream.truncate()
-
-        # check references
-        x.writeObject(obj)
-        self.assertEquals(self.stream.getvalue(), '\n\x00')
-        self.stream.truncate()
-
-    def test_object_proxy_mixed_array(self):
-        self.encoder.use_proxies = True
-        x = amf3.DataOutput(self.encoder)
-        obj = pyamf.MixedArray(spam='eggs')
-
-        x.writeObject(obj)
-        self.assertEquals(self.stream.getvalue(),
-            '\n\x07;flex.messaging.io.ObjectProxy\n\x0b\x01\tspam\x06\teggs\x01')
-        self.stream.truncate()
-
-        # check references
-        x.writeObject(obj)
-        self.assertEquals(self.stream.getvalue(), '\n\x00')
-        self.stream.truncate()
-
-    def test_object_proxy_inside_list(self):
-        self.encoder.use_proxies = True
-        x = amf3.DataOutput(self.encoder)
-        obj = [{'spam': 'eggs'}]
-
-        x.writeObject(obj)
-        self.assertEquals(self.stream.getvalue(),
-            '\n\x07Cflex.messaging.io.ArrayCollection\t\x03\x01\n\x07;'
-            'flex.messaging.io.ObjectProxy\n\x0b\x01\tspam\x06\teggs\x01')
 
     def test_short(self):
         x = amf3.DataOutput(self.encoder)

@@ -67,8 +67,7 @@ class ArrayCollection(list):
         self.extend(data)
 
     def __writeamf__(self, output):
-        output.encoder.writeList(
-            list(self), use_references=True, use_proxies=False)
+        output.encoder.writeList(list(self), use_references=True)
 
     def _get_length(self):
         return len(self)
@@ -251,7 +250,7 @@ class ObjectProxy(object):
         self._amf_object = input.readObject()
 
     def __writeamf__(self, output):
-        output.writeObject(self._amf_object, use_proxies=False)
+        output.writeObject(self._amf_object)
 
 
 def unproxy_object(obj):
