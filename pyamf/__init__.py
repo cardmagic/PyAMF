@@ -267,6 +267,7 @@ class ClassAlias(object):
         self._compiled = False
         self.anonymous = False
         self.sealed = None
+        self.bases = []
 
         if self.alias is None:
             self.anonymous = True
@@ -342,10 +343,8 @@ class ClassAlias(object):
 
         mro = inspect.getmro(self.klass)[1:]
 
-        try:
-            self._compile_base_class(mro[0])
-        except IndexError:
-            pass
+        for x in mro:
+            self._compile_base_class(x)
 
         self.getCustomProperties()
 
@@ -361,6 +360,7 @@ class ClassAlias(object):
             alias = register_class(klass)
 
         alias.compile()
+        self.bases.append((klass, alias))
 
         if alias.exclude_attrs:
             self.exclude_attrs.update(alias.exclude_attrs)
@@ -443,11 +443,6 @@ class ClassAlias(object):
         if not self.proxy_attrs:
             self.proxy_attrs = None
         else:
-            if not self.amf3:
-                raise ClassAliasError('amf3 = True must be specified for '
-                    'classes with proxied attributes. Attribute = %r, '
-                    'Class = %r' % (self.proxy_attrs, self.klass,))
-
             self.proxy_attrs = list(self.proxy_attrs)
             self.proxy_attrs.sort()
 
