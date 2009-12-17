@@ -368,7 +368,6 @@ class ClassAlias(object):
             alias = register_class(klass)
 
         alias.compile()
-
         self.bases.append((klass, alias))
 
         if alias.exclude_attrs:
@@ -452,11 +451,6 @@ class ClassAlias(object):
         if not self.proxy_attrs:
             self.proxy_attrs = None
         else:
-            if not self.amf3:
-                raise ClassAliasError('amf3 = True must be specified for '
-                    'classes with proxied attributes. Attribute = %r, '
-                    'Class = %r' % (self.proxy_attrs, self.klass,))
-
             self.proxy_attrs = list(self.proxy_attrs)
             self.proxy_attrs.sort()
 
