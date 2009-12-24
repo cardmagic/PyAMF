@@ -9,42 +9,41 @@ PyAMF SQLAlchemy adapter tests.
 
 import unittest
 
-from elixir import * # <-- import * sucks
+import elixir as e
 
 import pyamf
-from pyamf.adapters import _sqlalchemy_orm as adapter
+from pyamf.adapters import _elixir as adapter
+from pyamf.tests.util import Spam
 
 
-class Genre(Entity):
-    name = Field(Unicode(15), primary_key=True)
-    movies = ManyToMany('Movie')
+class Genre(e.Entity):
+    name = e.Field(e.Unicode(15), primary_key=True)
+    movies = e.ManyToMany('Movie')
 
     def __repr__(self):
         return '<Genre "%s">' % self.name
 
 
-class Movie(Entity):
-    title = Field(Unicode(30), primary_key=True)
-    year = Field(Integer, primary_key=True)
-    description = Field(UnicodeText, deferred=True)
-    director = ManyToOne('Director')
-    genres = ManyToMany('Genre')
-
-    def __repr__(self):
-        return '<Movie "%s" (%d)>' % (self.title, self.year)
+class Movie(e.Entity):
+    title = e.Field(e.Unicode(30), primary_key=True)
+    year = e.Field(e.Integer, primary_key=True)
+    description = e.Field(e.UnicodeText, deferred=True)
+    director = e.ManyToOne('Director')
+    genres = e.ManyToMany('Genre')
 
 
-class Director(Entity):
-    name = Field(Unicode(60))
-    movies = OneToMany('Movie')
+class Person(e.Entity):
+    name = e.Field(e.Unicode(60), primary_key=True)
 
-    def __repr__(self):
-        return '<Director "%s">' % self.name
+
+class Director(Person):
+    movies = e.OneToMany('Movie')
+    e.using_options(inheritance='multi')
 
 
 # set up
-metadata.bind = "sqlite://"
-setup_all()
+e.metadata.bind = "sqlite://"
+e.setup_all()
 
 
 class BaseTestCase(unittest.TestCase):
@@ -53,7 +52,7 @@ class BaseTestCase(unittest.TestCase):
     """
 
     def setUp(self):
-        create_all()
+        e.create_all()
 
         self.movie_alias = pyamf.register_class(Movie, 'movie')
         self.genre_alias = pyamf.register_class(Genre, 'genre')
@@ -62,9 +61,9 @@ class BaseTestCase(unittest.TestCase):
         self.create_movie_data()
 
     def tearDown(self):
-        drop_all()
-        session.rollback()
-        session.expunge_all()
+        e.drop_all()
+        e.session.rollback()
+        e.session.expunge_all()
 
         pyamf.unregister_class(Movie)
         pyamf.unregister_class(Genre)
@@ -78,96 +77,41 @@ class BaseTestCase(unittest.TestCase):
         brunner = Movie(title=u"Blade Runner", year=1982, director=rscott, genres=[scifi])
         swars = Movie(title=u"Star Wars", year=1977, director=glucas, genres=[scifi])
 
-        session.commit()
-        session.expunge_all()
+        e.session.commit()
+        e.session.expunge_all()
 
 
 class ClassAliasTestCase(BaseTestCase):
     def test_type(self):
-        self.assertIdentical(
-            self.movie_alias.__class__, adapter.SaMappedClassAlias)
-        self.assertIdentical(
-            self.genre_alias.__class__, adapter.SaMappedClassAlias)
-        self.assertIdentical(
-            self.director_alias.__class__, adapter.SaMappedClassAlias)
+        self.assertEqual(
+            self.movie_alias.__class__, adapter.ElixirAdapter)
+        self.assertEqual(
+            self.genre_alias.__class__, adapter.ElixirAdapter)
+        self.assertEqual(
+            self.director_alias.__class__, adapter.ElixirAdapter)
 
     def test_get_attrs(self):
         m = Movie.query.filter_by(title=u"Blade Runner").one()
 
+        g = m.genres[0]
+        d = m.director
+
         static, dynamic = self.movie_alias.getEncodableAttributes(m)
 
-        print static, dynamic
-
-
-class ApplyAttributesTestCase(unittest.TestCase):
-    def test_undefined(self):
-        u = self.alias.createInstance()
-
-        attrs = {
-            'sa_lazy': ['another_lazy_loaded'],
-            'sa_key': [None],
-            'addresses': [],
-            'lazy_loaded': [],
-            'another_lazy_loaded': pyamf.Undefined, # <-- the important bit
-            'id': None,
-            'name': 'test_user'
-        }
-
-        self.alias.applyAttributes(u, attrs)
-
-        d = u.__dict__.copy()
-
-        if sqlalchemy.__version__.startswith('0.4'):
-            self.assertTrue('_state' in d)
-            del d['_state']
-        elif sqlalchemy.__version__.startswith('0.5'):
-            self.assertTrue('_sa_instance_state' in d)
-            del d['_sa_instance_state']
-
-        self.assertEquals(d, {
-            'lazy_loaded': [],
-            'addresses': [],
-            'name': 'test_user',
-            'id': None
+        self.assertEquals(static, {
+            'genres': [g],
+            'description': None,
+            'title': u'Blade Runner',
+            'director': d,
+            'year': 1982
         })
 
-    def test_decode_unaliased(self):
-        u = self.alias.createInstance()
+        self.assertEquals(dynamic, {'sa_key': [u'Blade Runner', 1982], 'sa_lazy': []})
 
-        attrs = {
-            'sa_lazy': [],
-            'sa_key': [None],
-            'addresses': [],
-            'lazy_loaded': [],
-            # this is important because we haven't registered AnotherLazyLoaded
-            # as an alias and the decoded object for an untyped object is an
-            # instance of pyamf.ASObject
-            'another_lazy_loaded': [pyamf.ASObject({'id': 1, 'user_id': None})],
-            'id': None,
-            'name': 'test_user'
-        }
+    def test_inheritance(self):
+        d = Director.query.filter_by(name=u"Ridley Scott").one()
 
-        # sqlalchemy can't find any state to work with
-        self.assertRaises(AttributeError, self.alias.applyAttributes, u, attrs)
-
-
-class AdapterTestCase(BaseTestCase):
-    """
-    Checks to see if the adapter will actually intercept a class correctly.
-    """
-
-    def test_mapped(self):
-        self.assertNotEquals(None, adapter.class_mapper(User))
-        self.assertTrue(adapter.is_class_sa_mapped(User))
-
-    def test_instance(self):
-        u = User()
-
-        self.assertTrue(adapter.is_class_sa_mapped(u))
-
-    def test_not_mapped(self):
-        self.assertRaises(adapter.UnmappedInstanceError, adapter.class_mapper, Spam)
-        self.assertFalse(adapter.is_class_sa_mapped(Spam))
+        print self.director_alias.getEncodableAttributes(d)
 
 
 def suite():
@@ -180,9 +124,6 @@ def suite():
 
     classes = [
         ClassAliasTestCase,
-        #AdapterTestCase,
-        #ClassAliasTestCase,
-        #ApplyAttributesTestCase
     ]
 
     for x in classes:

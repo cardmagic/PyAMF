@@ -26,6 +26,9 @@ except Exception, e:
     UnmappedInstanceError = e.__class__
 
 
+class_checkers = []
+
+
 class SaMappedClassAlias(pyamf.ClassAlias):
     KEY_ATTR = 'sa_key'
     LAZY_ATTR = 'sa_lazy'
@@ -133,6 +136,10 @@ def is_class_sa_mapped(klass):
     """
     if not isinstance(klass, type):
         klass = type(klass)
+
+    for c in class_checkers:
+        if c(klass):
+            return False
 
     try:
         class_mapper(klass)
