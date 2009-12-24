@@ -9,7 +9,38 @@ Elixir adapter module. Elixir adds a number of properties to the mapped instance
 @since: 0.6
 """
 
-from pyamf.adapters import _sqlalchemy_orm as adapter
+import elixir.entity
+
+import pyamf
+from pyamf import adapters
+
+adapter = adapters.get_adapter('sqlalchemy.orm')
+
+adapter.class_checkers.append(elixir.entity.is_entity)
 
 
-adapter.SaMappedClassAlias.EXCLUDED_ATTRS.append('_global_session')
+class ElixirAdapter(adapter.SaMappedClassAlias):
+
+    EXCLUDED_ATTRS = adapter.SaMappedClassAlias.EXCLUDED_ATTRS + [
+        '_global_session']
+
+    def getCustomProperties(self):
+        adapter.SaMappedClassAlias.getCustomProperties(self)
+
+        self.descriptor = self.klass._descriptor
+        self.parent_descriptor = None
+
+        if self.descriptor.polymorphic:
+            self.exclude_attrs.update([self.descriptor.polymorphic])
+
+        if self.descriptor.parent:
+            self.parent_descriptor = self.descriptor.parent._descriptor
+
+    def _compile_base_class(self, klass):
+        if klass is elixir.EntityBase or klass is elixir.Entity:
+            return
+
+        pyamf.ClassAlias._compile_base_class(self, klass)
+
+
+pyamf.register_alias_type(ElixirAdapter, elixir.entity.is_entity)

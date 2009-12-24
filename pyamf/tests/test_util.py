@@ -985,6 +985,7 @@ class GetClassMetaTestCase(unittest.TestCase):
             'alias': None,
             'amf3': None,
             'exclude_attrs': None,
+            'proxy_attrs': None,
             'external': None
         }
 
@@ -1007,6 +1008,7 @@ class GetClassMetaTestCase(unittest.TestCase):
             'dynamic': None,
             'alias': 'foo.bar.Spam',
             'amf3': None,
+            'proxy_attrs': None,
             'exclude_attrs': None,
             'external': None
         }
@@ -1054,6 +1056,7 @@ class GetClassMetaTestCase(unittest.TestCase):
             'alias': None,
             'amf3': None,
             'static_attrs': None,
+            'proxy_attrs': None,
             'external': None
         }
 
@@ -1077,7 +1080,8 @@ class GetClassMetaTestCase(unittest.TestCase):
             'alias': None,
             'amf3': None,
             'static_attrs': None,
-            'external': None
+            'external': None,
+            'proxy_attrs': None,
         }
 
         self.assertEquals(util.get_class_meta(A), meta)
@@ -1094,6 +1098,7 @@ class GetClassMetaTestCase(unittest.TestCase):
 
         meta = {
             'exclude_attrs': None,
+            'proxy_attrs': None,
             'readonly_attrs': None,
             'proxy_attrs': None,
             'dynamic': None,
@@ -1117,6 +1122,7 @@ class GetClassMetaTestCase(unittest.TestCase):
 
         meta = {
             'exclude_attrs': None,
+            'proxy_attrs': None,
             'readonly_attrs': None,
             'proxy_attrs': None,
             'dynamic': False,
@@ -1140,6 +1146,7 @@ class GetClassMetaTestCase(unittest.TestCase):
 
         meta = {
             'exclude_attrs': None,
+            'proxy_attrs': None,
             'readonly_attrs': None,
             'proxy_attrs': None,
             'dynamic': None,
@@ -1158,6 +1165,7 @@ class GetClassMetaTestCase(unittest.TestCase):
             'readonly': ['bar'],
             'dynamic': False,
             'alias': 'spam.eggs',
+            'proxy_attrs': None,
             'amf3': True,
             'static': ['baz'],
             'external': True
@@ -1177,6 +1185,7 @@ class GetClassMetaTestCase(unittest.TestCase):
             'alias': 'spam.eggs',
             'amf3': True,
             'exclude_attrs': ['foo'],
+            'proxy_attrs': None,
             'external': True
         }
 
