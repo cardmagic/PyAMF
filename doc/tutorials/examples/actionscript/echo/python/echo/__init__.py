@@ -14,7 +14,7 @@ U{EchoTest<http://pyamf.org/wiki/EchoTest>} wiki page.
 from pyamf import register_class
 
 
-ECHO_NS = 'org.red5.server.webapp.echo'
+ECHO_NS = 'org.red5.demos.echo'
 
 
 class RemoteClass(object):
