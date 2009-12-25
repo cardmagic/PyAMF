@@ -1229,7 +1229,6 @@ def suite():
         BufferedByteStreamTestCase,
         ClassAliasTestCase,
         IndexedCollectionTestCase,
-        IndexedMapTestCase,
         IsClassSealedTestCase,
         GetClassMetaTestCase
     ]
