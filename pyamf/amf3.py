@@ -1154,9 +1154,9 @@ class Encoder(pyamf.BaseEncoder):
         <http://osflash.org/documentation/amf3/parsing_integers>}
         for more info.
         """
-        i = ENCODED_INT_CACHE.get(n)
-
-        if i is None:
+        try:
+            i = ENCODED_INT_CACHE[n]
+        except KeyError:
             i = ENCODED_INT_CACHE[n] = encode_int(n)
 
         self.stream.write(i)
