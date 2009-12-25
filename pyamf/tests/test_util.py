@@ -921,40 +921,6 @@ class IndexedCollectionTestCase(unittest.TestCase):
         self.assertEquals(id(test_obj), id(self.collection.getByReference(idx)))
 
 
-class IndexedMapTestCase(unittest.TestCase):
-    """
-    Tests for L{util.IndexedMap}
-    """
-
-    class TestObject(object):
-        def __init__(self):
-            self.name = 'test'
-
-    def setUp(self):
-        self.collection = util.IndexedMap()
-
-    def test_map(self):
-        test_obj = TestObject()
-        test_map = TestObject()
-
-        self.assertEquals(sys.getrefcount(test_obj), 2)
-        self.assertEquals(sys.getrefcount(test_map), 2)
-
-        ref = self.collection.map(test_obj, test_map)
-
-        self.assertEquals(sys.getrefcount(test_obj), 3)
-        self.assertEquals(sys.getrefcount(test_map), 3)
-
-        self.assertEquals(test_obj, self.collection.getByReference(ref))
-        self.assertEquals(test_map, self.collection.getMappedByReference(ref))
-
-        ref = self.collection.getReferenceTo(test_obj)
-        self.assertEquals(test_obj, self.collection.getByReference(ref))
-        self.assertEquals(test_map, self.collection.getMappedByReference(ref))
-
-        self.assertEquals(None, self.collection.getMappedByReference(74))
-
-
 class IsClassSealedTestCase(unittest.TestCase):
     """
     Tests for L{util.is_class_sealed}
@@ -1014,6 +980,7 @@ class GetClassMetaTestCase(unittest.TestCase):
         empty = {
             'readonly_attrs': None,
             'static_attrs': None,
+            'proxy_attrs': None,
             'dynamic': None,
             'alias': None,
             'amf3': None,
@@ -1037,6 +1004,7 @@ class GetClassMetaTestCase(unittest.TestCase):
         meta = {
             'readonly_attrs': None,
             'static_attrs': None,
+            'proxy_attrs': None,
             'dynamic': None,
             'alias': 'foo.bar.Spam',
             'amf3': None,
@@ -1083,6 +1051,7 @@ class GetClassMetaTestCase(unittest.TestCase):
         meta = {
             'readonly_attrs': None,
             'exclude_attrs': ['foo', 'bar'],
+            'proxy_attrs': None,
             'dynamic': None,
             'alias': None,
             'amf3': None,
@@ -1106,6 +1075,7 @@ class GetClassMetaTestCase(unittest.TestCase):
         meta = {
             'exclude_attrs': None,
             'readonly_attrs': ['foo', 'bar'],
+            'proxy_attrs': None,
             'dynamic': None,
             'alias': None,
             'amf3': None,
@@ -1130,6 +1100,7 @@ class GetClassMetaTestCase(unittest.TestCase):
             'exclude_attrs': None,
             'proxy_attrs': None,
             'readonly_attrs': None,
+            'proxy_attrs': None,
             'dynamic': None,
             'alias': None,
             'amf3': True,
@@ -1153,6 +1124,7 @@ class GetClassMetaTestCase(unittest.TestCase):
             'exclude_attrs': None,
             'proxy_attrs': None,
             'readonly_attrs': None,
+            'proxy_attrs': None,
             'dynamic': False,
             'alias': None,
             'amf3': None,
@@ -1176,6 +1148,7 @@ class GetClassMetaTestCase(unittest.TestCase):
             'exclude_attrs': None,
             'proxy_attrs': None,
             'readonly_attrs': None,
+            'proxy_attrs': None,
             'dynamic': None,
             'alias': None,
             'amf3': None,
@@ -1207,6 +1180,7 @@ class GetClassMetaTestCase(unittest.TestCase):
         ret = {
             'readonly_attrs': ['bar'],
             'static_attrs': ['baz'],
+            'proxy_attrs': None,
             'dynamic': False,
             'alias': 'spam.eggs',
             'amf3': True,
@@ -1217,6 +1191,29 @@ class GetClassMetaTestCase(unittest.TestCase):
 
         self.assertEquals(util.get_class_meta(A), ret)
         self.assertEquals(util.get_class_meta(B), ret)
+
+    def test_proxy(self):
+        class A:
+            class __amf__:
+                proxy = ('foo', 'bar')
+
+        class B(object):
+            class __amf__:
+                proxy = ('foo', 'bar')
+
+        meta = {
+            'exclude_attrs': None,
+            'readonly_attrs': None,
+            'proxy_attrs': ['foo', 'bar'],
+            'dynamic': None,
+            'alias': None,
+            'amf3': None,
+            'static_attrs': None,
+            'external': None
+        }
+
+        self.assertEquals(util.get_class_meta(A), meta)
+        self.assertEquals(util.get_class_meta(B), meta)
 
 
 def suite():

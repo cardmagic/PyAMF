@@ -31,9 +31,6 @@ import pyamf
 from pyamf import util
 from pyamf.flex import ObjectProxy, ArrayCollection
 
-#: If True encode/decode lists/tuples to L{ArrayCollections<ArrayCollection>}
-#: and dicts to L{ObjectProxy}
-use_proxies_default = False
 
 try:
     set()
@@ -246,7 +243,7 @@ class DataOutput(object):
         """
         self.stream.write(unicode(value).encode(charset))
 
-    def writeObject(self, value, use_references=True, use_proxies=None):
+    def writeObject(self, value, use_references=True):
         """
         Writes an object to data stream in AMF serialized format.
 
@@ -254,7 +251,7 @@ class DataOutput(object):
         @type use_references: C{bool}
         @param use_references:
         """
-        self.encoder.writeElement(value, use_references, use_proxies)
+        self.encoder.writeElement(value, use_references)
 
     def writeShort(self, value):
         """
@@ -597,7 +594,6 @@ class Context(pyamf.BaseContext):
         self.classes = {}
         self.class_ref = {}
         self.legacy_xml = util.IndexedCollection()
-        self.object_aliases = util.IndexedMap() # Maps one object to another
 
         self.class_idx = 0
 
@@ -613,30 +609,9 @@ class Context(pyamf.BaseContext):
         self.classes = {}
         self.class_ref = {}
         self.legacy_xml.clear()
-        self.object_aliases.clear()
 
         self.class_idx = 0
 
-    def setObjectAlias(self, obj, alias):
-        """
-        Maps an object to an aliased object.
-
-        @since: 0.4
-        """
-        self.object_aliases.map(obj, alias)
-
-    def getObjectAlias(self, obj):
-        """
-        Get an alias of an object.
-
-        @since: 0.4
-        """
-        ref = self.object_aliases.getReferenceTo(obj)
-
-        if ref is None:
-            return None
-
-        return self.object_aliases.getMappedByReference(ref)
 
     def getString(self, ref):
         """
@@ -782,11 +757,6 @@ class Decoder(pyamf.BaseDecoder):
         TYPE_XMLSTRING:  'readXMLString',
         TYPE_BYTEARRAY:  'readByteArray',
     }
-
-    def __init__(self, *args, **kwargs):
-        self.use_proxies = kwargs.pop('use_proxies', use_proxies_default)
-
-        pyamf.BaseDecoder.__init__(self, *args, **kwargs)
 
     def readUndefined(self):
         """
@@ -982,7 +952,7 @@ class Decoder(pyamf.BaseDecoder):
 
         return class_def, alias
 
-    def readObject(self, use_proxies=None):
+    def readObject(self):
         """
         Reads an object from the stream.
 
@@ -990,9 +960,6 @@ class Decoder(pyamf.BaseDecoder):
             only is not allowed.
         @raise pyamf.DecodeError: Unknown object encoding.
         """
-        if use_proxies is None:
-            use_proxies = self.use_proxies
-
         def readStatic(class_def, obj):
             for attr in class_def.static_properties:
                 obj[attr] = self.readElement()
@@ -1011,9 +978,6 @@ class Decoder(pyamf.BaseDecoder):
 
             if obj is None:
                 raise pyamf.ReferenceError('Unknown reference %d' % (ref >> 1,))
-
-            if use_proxies is True:
-                obj = self.readProxyObject(obj)
 
             return obj
 
@@ -1038,23 +1002,7 @@ class Decoder(pyamf.BaseDecoder):
 
         alias.applyAttributes(obj, obj_attrs, codec=self)
 
-        if use_proxies is True:
-            obj = self.readProxyObject(obj)
-
         return obj
-
-    def readProxyObject(self, proxy):
-        """
-        Return the source object of a proxied object.
-
-        @since: 0.4
-        """
-        if isinstance(proxy, ArrayCollection):
-            return list(proxy)
-        elif isinstance(proxy, ObjectProxy):
-            return proxy._amf_object
-
-        return proxy
 
     def _readXML(self, legacy=False):
         """
@@ -1151,12 +1099,11 @@ class Encoder(pyamf.BaseEncoder):
     ]
 
     def __init__(self, *args, **kwargs):
-        self.use_proxies = kwargs.pop('use_proxies', use_proxies_default)
         self.string_references = kwargs.pop('string_references', True)
 
         pyamf.BaseEncoder.__init__(self, *args, **kwargs)
 
-    def writeElement(self, data, use_references=True, use_proxies=None):
+    def writeElement(self, data, use_references=True):
         """
         Writes the data.
 
@@ -1171,7 +1118,7 @@ class Encoder(pyamf.BaseEncoder):
         if func is None:
             raise pyamf.EncodeError("Unknown type %r" % (data,))
 
-        func(data, use_references=use_references, use_proxies=use_proxies)
+        func(data, use_references=use_references)
 
     def writeClass(self, *args, **kwargs):
         """
@@ -1213,11 +1160,12 @@ class Encoder(pyamf.BaseEncoder):
         <http://osflash.org/documentation/amf3/parsing_integers>}
         for more info.
         """
-        try:
-            self.stream.write(ENCODED_INT_CACHE[n])
-        except KeyError:
-            ENCODED_INT_CACHE[n] = encode_int(n)
-            self.stream.write(ENCODED_INT_CACHE[n])
+        i = ENCODED_INT_CACHE.get(n)
+
+        if i is None:
+            i = ENCODED_INT_CACHE[n] = encode_int(n)
+
+        self.stream.write(i)
 
     def writeInteger(self, n, **kwargs):
         """
@@ -1327,7 +1275,7 @@ class Encoder(pyamf.BaseEncoder):
         ms = util.get_timestamp(n)
         self.stream.write_double(ms * 1000.0)
 
-    def writeList(self, n, use_references=True, use_proxies=None):
+    def writeList(self, n, use_references=True):
         """
         Writes a C{tuple}, C{set} or C{list} to the stream.
 
@@ -1337,22 +1285,6 @@ class Encoder(pyamf.BaseEncoder):
         @type use_references: C{bool}
         @param use_references: Default is C{True}.
         """
-        # Encode lists as ArrayCollections
-        if use_proxies is None:
-            use_proxies = self.use_proxies
-
-        if use_proxies:
-            ref_obj = self.context.getObjectAlias(n)
-
-            if ref_obj is None:
-                proxy = ArrayCollection(n)
-                self.context.setObjectAlias(n, proxy)
-                ref_obj = proxy
-
-            self.writeObject(ref_obj, use_references, use_proxies=False)
-
-            return
-
         self.stream.write(TYPE_ARRAY)
 
         if use_references:
@@ -1370,7 +1302,7 @@ class Encoder(pyamf.BaseEncoder):
 
         [self.writeElement(x) for x in n]
 
-    def writeDict(self, n, use_references=True, use_proxies=None):
+    def writeDict(self, n, use_references=True):
         """
         Writes a C{dict} to the stream.
 
@@ -1381,27 +1313,11 @@ class Encoder(pyamf.BaseEncoder):
         @raise ValueError: Non C{int}/C{str} key value found in the C{dict}
         @raise EncodeError: C{dict} contains empty string keys.
         """
-
         # Design bug in AMF3 that cannot read/write empty key strings
         # http://www.docuverse.com/blog/donpark/2007/05/14/flash-9-amf3-bug
         # for more info
         if '' in n:
             raise pyamf.EncodeError("dicts cannot contain empty string keys")
-
-        if use_proxies is None:
-            use_proxies = self.use_proxies
-
-        if use_proxies is True:
-            ref_obj = self.context.getObjectAlias(n)
-
-            if ref_obj is None:
-                proxy = ObjectProxy(pyamf.ASObject(n))
-                self.context.setObjectAlias(n, proxy)
-                ref_obj = proxy
-
-            self.writeObject(ref_obj, use_references, use_proxies=False)
-
-            return
 
         self.stream.write(TYPE_ARRAY)
 
@@ -1473,7 +1389,7 @@ class Encoder(pyamf.BaseEncoder):
 
         f(obj, **kwargs)
 
-    def writeObject(self, obj, use_references=True, use_proxies=None):
+    def writeObject(self, obj, use_references=True):
         """
         Writes an object to the stream.
 
@@ -1483,21 +1399,6 @@ class Encoder(pyamf.BaseEncoder):
         @type use_references: C{bool}
         @raise EncodeError: Encoding an object in amf3 tagged as amf0 only.
         """
-        if use_proxies is None:
-            use_proxies = self.use_proxies
-
-        if use_proxies is True and obj.__class__ is dict:
-            ref_obj = self.context.getObjectAlias(obj)
-
-            if ref_obj is None:
-                proxy = ObjectProxy(obj)
-                self.context.setObjectAlias(obj, proxy)
-                ref_obj = proxy
-
-            self.writeObject(ref_obj, use_references, use_proxies=False)
-
-            return
-
         self.stream.write(TYPE_OBJECT)
 
         if use_references:
@@ -1611,7 +1512,7 @@ class Encoder(pyamf.BaseEncoder):
         self._writeInteger(l << 1 | REFERENCE_BIT)
         self.stream.write(buf)
 
-    def writeXML(self, n, use_references=True, use_proxies=None):
+    def writeXML(self, n, use_references=True):
         """
         Writes a XML string to the data stream.
 
