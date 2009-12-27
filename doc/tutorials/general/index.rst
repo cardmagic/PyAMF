@@ -7,4 +7,5 @@
 
    helloworld/index.rst
    client.rst
+   authentication.rst
    sharedobject.rst

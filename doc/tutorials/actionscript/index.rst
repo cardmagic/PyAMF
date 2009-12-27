@@ -13,3 +13,4 @@
    socket.rst
    addressbook.rst
    guestbook.rst
+   recordset.rst

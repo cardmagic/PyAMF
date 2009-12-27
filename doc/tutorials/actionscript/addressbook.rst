@@ -33,7 +33,7 @@ Alternatively, if you just want to have a look, you can browse_ the example onli
 Gateway
 =======
 
-**Note**: make sure you have SQLAlchemy_ >= 0.96 installed.
+**Note**: make sure you have SQLAlchemy_ >= 0.4 installed.
 
 The remoting gateway for the Adobe Flash Player and Python AMF clients starts on
 http://localhost:8000 when you launch the `development server`_:
