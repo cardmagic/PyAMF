@@ -8,9 +8,8 @@
 
 .. topic:: Introduction
 
-    `Apache Ant <http://ant.apache.org>`_ is a Java-based build tool. Ant
-    build files are created using XML but it also support Python
-    scripts using `Jython <http://jython.org>`_.
+    `Apache Ant`_ is a Java-based build tool. Ant build files are created
+    using XML but it also support Python scripts using Jython_.
 
     This howto was created using Jython 2.5.0 standalone, PyAMF 0.5,
     Ant 1.7 and Java JDK 1.6.0_13 on Mac OSX 10.5.7.
@@ -21,9 +20,8 @@ About JSR-223
 
 There are 2 ways to execute Python scripts in Ant:
 
-- using `JSR-223 <http://jythonpodcast.hostjava.net/jythonbook/chapter10.html#jsr-223>`_
-- `utilizing <http://jythonpodcast.hostjava.net/jythonbook/chapter10.html#utilizing-pythoninterpreter>`_
-  the ``PythonInterpreter``
+- using JSR-223_
+- utilising_ the ``PythonInterpreter``
 
 JSR-223 enables dynamic languages to be callable via Java in a seamless
 manner, which is supported in Jython 2.2.1 and newer. This howto will
@@ -187,4 +185,11 @@ And the server running in Ant should show some debug information:
 Flash
 -----
 
-The Hello World Flash examples should all work with this example's ``server.py``.
+The :doc:`Hello World <../general/helloworld>`_ Flash examples should all work with this
+example's ``server.py``.
+
+
+.. _Apache Ant: http://ant.apache.org
+.. _Jython: http://jython.org
+.. _JSR-223: http://jythonpodcast.hostjava.net/jythonbook/chapter10.html#jsr-223
+.. _utilising: http://jythonpodcast.hostjava.net/jythonbook/chapter10.html#utilizing-pythoninterpreter

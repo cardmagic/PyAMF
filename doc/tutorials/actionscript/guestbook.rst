@@ -28,6 +28,8 @@ Alternatively, if you just want to have a look, you can browse_ the example onli
 Database
 ========
 
+**Note**: make sure you have Twisted_, MySQL-Python_ and MySQL_ installed.
+
 This example uses a MySQL setup with a database called 'guestbook'. The `schema file`_
 is included that you need to run on your database first.
 The database host/username/password settings can be found in the `config file`_.
@@ -35,8 +37,6 @@ The database host/username/password settings can be found in the `config file`_.
 
 Gateway
 =======
-
-**Note**: make sure you have Twisted_ >= 2.5 installed.
 
 The remoting gateway for the Adobe Flash Player and other AMF clients starts on
 http://localhost:8080 when you launch the `development server`_:
@@ -68,6 +68,28 @@ You can simply open the `SWF file`_ and it will connect to http://localhost:8080
 Python
 ------
 
+The Python AMF client can be started by running the following from the `python`
+folder:
+
+.. code-block:: bash
+
+    python client.py
+
+Options
+_______
+
+When you run `python client.py --help` it will display the various options available
+for this example client:
+
+.. code-block:: bash
+
+    Usage: client.py [options]
+
+    Options:
+      -h, --help            show this help message and exit
+      -p PORT, --port=PORT  port number [default: 8000]
+      --host=HOST           host address [default: localhost]
+
 
 .. _Flex SDK: http://opensource.adobe.com/wiki/display/flexsdk/Flex+SDK
 .. _Twisted: http://twistedmatrix.com
@@ -77,3 +99,5 @@ Python
 .. _SWF file: http://pyamf.org/browser/pyamf/trunk/doc/tutorials/examples/actionscript/guestbook/flex/deploy/guestbook.swf
 .. _schema file: http://pyamf.org/browser/pyamf/trunk/doc/tutorials/examples/actionscript/guestbook/db/schema.sql
 .. _config file: http://pyamf.org/browser/pyamf/trunk/doc/tutorials/examples/actionscript/guestbook/python/settings.cfg
+.. _MySQL-Python: http://sourceforge.net/projects/mysql-python/
+.. _MySQL: http://mysql.org

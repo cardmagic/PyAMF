@@ -38,7 +38,7 @@ Alternatively, if you just want to have a look, you can browse_ the example onli
 Gateway
 =======
 
-**Note**: make sure you have Django_ >= 0.96 installed.
+**Note**: Make sure you have Django_ >= 0.96 installed.
 
 The remoting gateway for the Adobe Flash Player and Python AMF clients starts on
 http://127.0.0.1:8000 when you launch the `development server`_:
@@ -55,7 +55,7 @@ You should see something like:
     Validating models...
     0 errors found
 
-    Django version 0.97-pre-SVN-7510, using settings 'python.settings'
+    Django version 1.1.1, using settings 'python.settings'
     Development server is running at http://127.0.0.1:8000/
     Quit the server with CONTROL-C.
 
@@ -66,8 +66,11 @@ You can start the development server on a different host/port like this:
     python manage.py runserver 192.168.1.100:8080
 
 
-Client
-======
+Clients
+=======
+
+Flash Player
+------------
 
 You can simply open the `SWF file`_ and it will connect to http://localhost:8000.
 
@@ -76,6 +79,68 @@ can see the snapshots in the View tab. The snapshots are saved in the
 `python/gateway/images` folder.
 
 .. image:: images/bytearrayexample.jpg
+
+
+Python
+------
+
+The Python AMF client can be started by running the following from the `python`
+folder:
+
+.. code-block:: bash
+
+    python client.py
+
+You should see something like this for the client:
+
+.. code-block:: bash
+
+    Found 1 snapshot(s):
+	http://127.0.0.1:8000/images/django-logo.jpg
+    Saved snapshot:
+	snapshot_x_M527.jpg:	http://127.0.0.1:8000/images/snapshot_x_M527.jpg
+
+And the server prints:
+
+.. code-block:: bash
+
+    [2009-12-26 14:08:15,023 root DEBUG] remoting.decode start
+    [2009-12-26 14:08:15,024 root DEBUG] Remoting target: u'getSnapshots'
+    [2009-12-26 14:08:15,024 root DEBUG] remoting.decode end
+    [2009-12-26 14:08:15,024 root DEBUG] AMF Request: <Envelope amfVersion=0>
+      (u'/1', <Request target=u'getSnapshots'>[]</Request>)
+    </Envelope>
+    [2009-12-26 14:08:15,026 root DEBUG] AMF Response: <Envelope amfVersion=0>
+      (u'/1', <Response status=/onResult>['http://127.0.0.1:8000/images/', ['jpg', 'png'],
+    <flex.messaging.io.ArrayCollection [{'name': 'django-logo.jpg'}]>]</Response>)
+    </Envelope>
+    [26/Dec/2009 14:08:15] "POST / HTTP/1.1" 200 149
+    [2009-12-26 14:08:15,032 root DEBUG] remoting.decode start
+    [2009-12-26 14:08:15,033 root DEBUG] Remoting target: u'ByteArray.saveSnapshot'
+    [2009-12-26 14:08:15,033 root DEBUG] remoting.decode end
+    [2009-12-26 14:08:15,033 root DEBUG] AMF Request: <Envelope amfVersion=0>
+     (u'/2', <Request target=u'ByteArray.saveSnapshot'>
+             [<pyamf.amf3.ByteArray object at 0x102266c08>, u'jpg']</Request>)
+    </Envelope>
+    [2009-12-26 14:08:15,034 root DEBUG] AMF Response: <Envelope amfVersion=0>
+     (u'/2', <Response status=/onResult>{'url': u'http://127.0.0.1:8000/images/snapshot_x_M527.jpg',
+                                         'name': u'snapshot_x_M527.jpg'}</Response>)
+    </Envelope>
+
+Options
+_______
+
+When you run `python client.py --help` it will display the various options available
+for this example client:
+
+.. code-block:: bash
+
+    Usage: client.py [options]
+
+    Options:
+      -h, --help            show this help message and exit
+      -p PORT, --port=PORT  port number [default: 8000]
+      --host=HOST           host address [default: 127.0.0.1]
 
 
 .. _Flex SDK: http://opensource.adobe.com/wiki/display/flexsdk/Flex+SDK

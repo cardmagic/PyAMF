@@ -53,7 +53,7 @@ Should output the following:
 
 
 Gateway
--------
+=======
 
 The remoting gateway for the Adobe Flash Player and Python AMF clients is available on
 http://localhost:8000/gateway/shell/ when you launch the `development server`_:
@@ -69,7 +69,7 @@ You should see something like:
     Validating models...
     0 errors found
 
-    Django version 0.97-pre-SVN-7510, using settings 'python.settings'
+    Django version 1.1.1, using settings 'python.settings'
     Development server is running at http://127.0.0.1:8000/
     Quit the server with CONTROL-C.
 
@@ -77,9 +77,59 @@ You should see something like:
 Client
 ======
 
+Flash Player
+------------
+
 You can simply open the `SWF file`_ and it will connect to http://localhost:8000.
 
 .. image:: images/shellexample.png
+
+
+Python
+------
+
+The Python AMF client can be started by running the following from the `python`
+folder:
+
+.. code-block:: bash
+
+    python client.py
+
+You should see something like this for the client:
+
+.. code-block:: python
+
+    Connecting to http://localhost:8000/gateway/shell/
+
+    Welcome to the PyAMF 0.5.1 Shell Demo!
+    Python 2.6.4 (r264:75706, Dec 22 2009, 21:55:52) 
+    [GCC 4.2.1 (Apple Inc. build 5646)] on darwin
+    Type "help", "copyright", "credits" or "license" for more information.
+    >>> 
+
+You can now use the interpreter as you normally would:
+
+.. code-block:: python
+
+    >>> import sys
+    >>> sys.version
+    '2.6.4 (r264:75706, Dec 22 2009, 21:55:52) \n[GCC 4.2.1 (Apple Inc. build 5646)]'
+
+
+Options
+_______
+
+When you run `python client.py --help` it will display the various options available
+for this example client:
+
+.. code-block:: bash
+
+    Usage: client.py [options]
+
+    Options:
+      -h, --help            show this help message and exit
+      -p PORT, --port=PORT  port number [default: 8000]
+      --host=HOST           host address [default: localhost]
 
 
 .. _Flex: http://opensource.adobe.com/wiki/display/flexsdk/Flex+SDK

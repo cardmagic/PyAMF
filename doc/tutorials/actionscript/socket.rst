@@ -82,7 +82,15 @@ the system time to the Flex application every second:
 Python
 ------
 
-Start the client_ and it will connect to the socket server on http://localhost:8000.
+The Python AMF client can be started by running the following from the `python`
+folder:
+
+.. code-block:: bash
+
+    python client.py
+
+The client will connect to the socket server on http://localhost:8000
+and start sending messages:
 
 .. code-block:: bash
 
@@ -98,6 +106,20 @@ Start the client_ and it will connect to the socket server on http://localhost:8
     2009-07-02 23:06:36.686253
     send request: stop
 
+Options
+_______
+
+When you run `python client.py --help` it will display the various options available
+for this example client:
+
+.. code-block:: bash
+
+    Usage: client.py [options]
+
+    Options:
+      -h, --help            show this help message and exit
+      -p PORT, --port=PORT  port number [default: 8000]
+      --host=HOST           host address [default: localhost]
 
 .. _Flex SDK: http://opensource.adobe.com/wiki/display/flexsdk/Flex+SDK
 .. _Twisted: http://twistedmatrix.com

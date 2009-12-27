@@ -61,8 +61,9 @@ You can modify the headers of the HTTP request using this convenient API:
 More
 ====
 
-Check the `API docs <http://api.pyamf.org>`_ for more information. The source
-for the RecordSet example is also available.
+Check the `API docs`_ for more information. The source for the
+:doc:`../actionscript/recordset` example is also available.
 
 
 .. _other AMF implementations: http://en.wikipedia.org/wiki/Action_Message_Format
+.. _API docs: http://api.pyamf.org

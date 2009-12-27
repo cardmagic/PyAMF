@@ -76,6 +76,64 @@ You can simply open the `SWF file`_ and it will connect to http://localhost:8000
 
 .. image:: images/addressbook_example.png
 
+Python
+------
+
+The Python AMF client can be started by running the following from the `python`
+folder:
+
+.. code-block:: bash
+
+    python client.py
+
+You should see something like this for the client:
+
+.. code-block:: bash
+
+    Added user: Bill Lumbergh
+    Load users:
+	1. Bill (2009-12-26 19:45:22.522754)
+
+And the server prints:
+
+.. code-block:: bash
+
+    2009-12-26 20:45:22,470 DEBUG [root] remoting.decode start
+    2009-12-26 20:45:22,471 DEBUG [root] Remoting target: u'ExampleService.insertDefaultData'
+    2009-12-26 20:45:22,471 DEBUG [root] remoting.decode end
+    2009-12-26 20:45:22,472 DEBUG [root] AMF Request: <Envelope amfVersion=0>
+     (u'/1', <Request target=u'ExampleService.insertDefaultData'>[]</Request>)
+    </Envelope>
+    2009-12-26 20:45:22,536 DEBUG [root] AMF Response: <Envelope amfVersion=0>
+     (u'/1', <Response status=/onResult>u'Added user: Bill Lumbergh'</Response>)
+    </Envelope>
+    localhost - - [26/Dec/2009 20:45:22] "POST / HTTP/1.1" 200 57
+    2009-12-26 20:45:22,541 DEBUG [root] remoting.decode start
+    2009-12-26 20:45:22,541 DEBUG [root] Remoting target: u'ExampleService.loadAll'
+    2009-12-26 20:45:22,541 DEBUG [root] remoting.decode end
+    2009-12-26 20:45:22,541 DEBUG [root] AMF Request: <Envelope amfVersion=0>
+     (u'/2', <Request target=u'ExampleService.loadAll'>[u'org.pyamf.examples.addressbook.models.User']</Request>)
+    </Envelope>
+    2009-12-26 20:45:22,545 DEBUG [root] AMF Response: <Envelope amfVersion=0>
+     (u'/2', <Response status=/onResult>[<models.User object at 0x10285c750>]</Response>)
+    </Envelope>
+    localhost - - [26/Dec/2009 20:45:22] "POST / HTTP/1.1" 200 865
+
+Options
+_______
+
+When you run `python client.py --help` it will display the various options available
+for this example client:
+
+.. code-block:: bash
+
+    Usage: client.py [options]
+
+    Options:
+      -h, --help            show this help message and exit
+      -p PORT, --port=PORT  port number [default: 8000]
+      --host=HOST           host address [default: localhost]
+
 
 .. _Flex SDK: http://opensource.adobe.com/wiki/display/flexsdk/Flex+SDK
 .. _SQLAlchemy: http://sqlalchemy.org

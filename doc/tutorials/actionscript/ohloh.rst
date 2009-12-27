@@ -1,6 +1,6 @@
-*************
-  Ohloh API
-*************
+*********
+  Ohloh
+*********
 
 .. image:: images/ohloh_logo.png
 
@@ -47,19 +47,50 @@ folder:
     python server.py
 
 **Note**: Make sure you replace the API key in ohloh.py_ with a valid one
-that you can get for free when you sign up on Ohloh.
+that you can get for free when you sign up on the Ohloh website.
+
+Options
+-------
+
+When you run `python server.py --help` it will display the various options available
+for this example server:
+
+.. code-block:: bash
+
+    Usage: server.py [options]
+
+    Options:
+      -h, --help            show this help message and exit
+      -p PORT, --port=PORT  port number [default: 8000]
+      --host=HOST           host address [default: localhost]
 
 
 Clients
 =======
 
-Use of one the following clients to communicate with Ohloh.
+Use of one the following clients below to communicate with Ohloh.
 
-- `Python client`_
-- `SWF file`_
+More API examples are available on the `Ohloh website`_.
 
-Other examples are available on the `Ohloh website`_.
+Flash Player
+------------
 
+You can simply open the `SWF file`_ and it will connect to
+http://localhost:8000.
+
+Python
+------
+
+The Python client allows you to query the Ohloh API and print the
+result on stout. It requires you to enter the API key and it's
+associated email address, like this:
+
+.. code-block:: bash
+
+    python client.py <api-key> <email-address>
+
+When you run the client it should print the Ohloh account details
+for that email address.
 
 .. _Ohloh: http://www.ohloh.net
 .. _Ohloh API: http://www.ohloh.net/api/getting_started
@@ -70,4 +101,3 @@ Other examples are available on the `Ohloh website`_.
 .. _development server: http://pyamf.org/browser/pyamf/trunk/doc/tutorials/examples/actionscript/bytearray/python/manage.py
 .. _SWF file: http://pyamf.org/browser/pyamf/trunk/doc/tutorials/examples/actionscript/ohloh/flex/deploy/ohloh.swf
 .. _Ohloh website: http://www.ohloh.net/api/examples
-.. _Python client: http://pyamf.org/browser/pyamf/trunk/doc/tutorials/examples/actionscript/ohloh/python/client.py
