@@ -105,37 +105,33 @@ class DjangoGateway(gateway.BaseGateway):
                 strict=self.strict, logger=self.logger,
                 timezone_offset=timezone_offset)
         except (pyamf.DecodeError, IOError):
-            fe = gateway.format_exception()
-
             if self.logger:
-                self.logger.exception(fe)
+                self.logger.exception('Error decoding AMF request')
 
-            response = "400 Bad Request\n\nThe request body was unable to " \
-                "be successfully decoded."
+            response = ("400 Bad Request\n\nThe request body was unable to "
+                "be successfully decoded.")
 
             if self.debug:
-                response += "\n\nTraceback:\n\n%s" % fe
+                response += "\n\nTraceback:\n\n%s" % gateway.format_exception()
 
             return http.HttpResponseBadRequest(mimetype='text/plain', content=response)
         except (KeyboardInterrupt, SystemExit):
             raise
         except:
-            fe = gateway.format_exception()
-
             if self.logger:
-                self.logger.exception(fe)
+                self.logger.exception('Unexpected error decoding AMF request')
 
             response = ('500 Internal Server Error\n\n'
                 'An unexpected error occurred.')
 
             if self.debug:
-                response += "\n\nTraceback:\n\n%s" % fe
+                response += "\n\nTraceback:\n\n%s" % gateway.format_exception()
 
             return http.HttpResponseServerError(mimetype='text/plain',
                 content=response)
 
         if self.logger:
-            self.logger.info("AMF Request: %r" % request)
+            self.logger.debug("AMF Request: %r" % request)
 
         # Process the request
         try:
@@ -143,38 +139,34 @@ class DjangoGateway(gateway.BaseGateway):
         except (KeyboardInterrupt, SystemExit):
             raise
         except:
-            fe = gateway.format_exception()
-
             if self.logger:
-                self.logger.exception(fe)
+                self.logger.exception('Error processing AMF request')
 
             response = "500 Internal Server Error\n\nThe request was " \
                 "unable to be successfully processed."
 
             if self.debug:
-                response += "\n\nTraceback:\n\n%s" % fe
+                response += "\n\nTraceback:\n\n%s" % gateway.format_exception()
 
             return http.HttpResponseServerError(mimetype='text/plain',
                 content=response)
 
         if self.logger:
-            self.logger.info("AMF Response: %r" % response)
+            self.logger.debug("AMF Response: %r" % response)
 
         # Encode the response
         try:
             stream = remoting.encode(response, strict=self.strict,
                 logger=self.logger, timezone_offset=timezone_offset)
         except:
-            fe = gateway.format_exception()
-
             if self.logger:
-                self.logger.exception(fe)
+                self.logger.exception('Error encoding AMF request')
 
             response = ("500 Internal Server Error\n\nThe request was "
                 "unable to be encoded.")
 
             if self.debug:
-                response += "\n\nTraceback:\n\n%s" % fe
+                response += "\n\nTraceback:\n\n%s" % gateway.format_exception()
 
             return http.HttpResponseServerError(mimetype='text/plain', content=response)
 

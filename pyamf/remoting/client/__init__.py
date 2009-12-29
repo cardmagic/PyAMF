@@ -14,9 +14,8 @@ import pyamf
 from pyamf import remoting
 
 
-#: Default user agent is C{PyAMF/x.x.x}.
-DEFAULT_USER_AGENT = 'PyAMF/%s' % '.'.join(map(lambda x: str(x),
-    pyamf.__version__))
+#: Default user agent is C{PyAMF/x.x(.x)}.
+DEFAULT_USER_AGENT = 'PyAMF/%s' % (pyamf.version,)
 
 HTTP_OK = 200
 
@@ -101,7 +100,15 @@ class ServiceProxy(object):
         if self._auto_execute:
             response = self._gw.execute_single(request)
 
-            # XXX nick: What to do about Fault objects here?
+            if response.status == remoting.STATUS_ERROR:
+                if hasattr(response.body, 'raiseException'):
+                    try:
+                        response.body.raiseException()
+                    except:
+                        raise
+                else:
+                    raise remoting.RemotingError
+
             return response.body
 
         return request
@@ -264,7 +271,7 @@ class RemotingService(object):
         location = '%s://%s:%s%s' % (self.url[0], hostname, port, self.url[2])
 
         if self.logger:
-            self.logger.info('Connecting to %s' % location)
+            self.logger.debug('Connecting to %s' % location)
             self.logger.debug('Referer: %s' % self.referer)
             self.logger.debug('User-Agent: %s' % self.user_agent)
 

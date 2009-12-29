@@ -72,16 +72,19 @@ class DjangoClassAlias(pyamf.ClassAlias):
 
         self.meta = self.klass._meta
 
-        for x in self.meta.local_fields:
+        for name in self.meta.get_all_field_names():
+            x = self.meta.get_field_by_name(name)[0]
+
             if isinstance(x, files.FileField):
-                self.readonly_attrs.update([x.name])
+                self.readonly_attrs.update([name])
+
+            if isinstance(x, related.RelatedObject):
+                continue
 
             if not isinstance(x, related.ForeignKey):
-                self.fields[x.name] = x
+                self.fields[name] = x
             else:
-                self.relations[x.name] = x
-
-            self.columns.append(x.attname)
+                self.relations[name] = x
 
         for k, v in self.klass.__dict__.iteritems():
             if isinstance(v, related.ReverseManyRelatedObjectsDescriptor):
@@ -150,36 +153,36 @@ class DjangoClassAlias(pyamf.ClassAlias):
         return value
 
     def getEncodableAttributes(self, obj, **kwargs):
-        sa, da = pyamf.ClassAlias.getEncodableAttributes(self, obj, **kwargs)
+        attrs = pyamf.ClassAlias.getEncodableAttributes(self, obj, **kwargs)
+
+        if not attrs:
+            attrs = {}
 
         for name, prop in self.fields.iteritems():
-            if name not in sa:
+            if name not in attrs.keys():
                 continue
 
             if isinstance(prop, related.ManyToManyField):
-                sa[name] = [x for x in getattr(obj, name).all()]
+                attrs[name] = [x for x in getattr(obj, name).all()]
             else:
-                sa[name] = self._encodeValue(prop, getattr(obj, name))
+                attrs[name] = self._encodeValue(prop, getattr(obj, name))
 
-        if not da:
-            da = {}
-
-        keys = da.keys()
+        keys = attrs.keys()
 
         for key in keys:
             if key.startswith('_'):
-                del da[key]
-            elif key in self.columns:
-                del da[key]
+                del attrs[key]
 
         for name, relation in self.relations.iteritems():
             if '_%s_cache' % name in obj.__dict__:
-                da[name] = getattr(obj, name)
+                attrs[name] = getattr(obj, name)
 
-        if not da:
-            da = None
+            del attrs[relation.column]
 
-        return sa, da
+        if not attrs:
+            attrs = None
+
+        return attrs
 
     def getDecodableAttributes(self, obj, attrs, **kwargs):
         attrs = pyamf.ClassAlias.getDecodableAttributes(self, obj, attrs, **kwargs)

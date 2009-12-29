@@ -47,7 +47,7 @@ You **don't** need these packages if you're using Python 2.5 or newer.
 Step 1
 ------
 
-Download_ and unpack the PyAMF archive of your choice::
+:doc:`community/download` and unpack the PyAMF archive of your choice::
 
     tar zxfv PyAMF-<version>.tar.gz
     cd PyAMF-<version>
@@ -80,11 +80,11 @@ Optional Extras
 PyAMF integrates with the following optional third-party Python
 libraries:
 
- - wsgiref_ 0.1.2 or newer (included in Python 2.5 and newer)
- - SQLAlchemy_ 0.4 or newer
- - Twisted_ 2.5 or newer
- - Django_ 0.97 or newer
- - `Google App Engine`_ 1.0 or newer
+- wsgiref_ 0.1.2 or newer (included in Python 2.5 and newer)
+- SQLAlchemy_ 0.4 or newer
+- Twisted_ 2.5 or newer
+- Django_ 0.97 or newer
+- `Google App Engine`_ 1.0 or newer
 
 
 C-Extension
@@ -92,7 +92,7 @@ C-Extension
 
 To modify the cPyAMF extension you need:
 
- - Cython_ 0.10 or newer
+- Cython_ 0.10 or newer
 
 And run the command below on the ``.pyx`` files to create the
 ``.c`` file, which contains the C source for the ``cPyAMF``
@@ -121,11 +121,10 @@ To install PyAMF to a custom location::
 
 
 .. _Python: 	http://www.python.org
-.. _yet:	http://pyamf.org/milestone/Python%203000
+.. _yet:	http://pyamf.org/milestone/0.7
 .. _setuptools:	http://peak.telecommunity.com/DevCenter/setuptools
 .. _easy_install: http://peak.telecommunity.com/DevCenter/EasyInstall#installing-easy-install
 .. _ez_setup.py: http://svn.pyamf.org/pyamf/trunk/ez_setup.py
-.. _Download:	http://pyamf.org/wiki/Download
 .. _ElementTree: http://effbot.org/zone/element-index.htm
 .. _uuid:	http://pypi.python.org/pypi/uuid
 .. _wsgiref:	http://pypi.python.org/pypi/wsgiref

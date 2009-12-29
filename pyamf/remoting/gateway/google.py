@@ -7,10 +7,10 @@ Gateway for Google App Engine.
 This gateway allows you to expose functions in Google App Engine web
 applications to AMF clients and servers.
 
-@see: U{Google App Engine homepage (external)
-    <http://code.google.com/appengine>}
+*See*: `Google App Engine homepage (external)
+    <http://code.google.com/appengine>`_
 
-@since: 0.3.1
+*Since*: 0.3.1
 """
 
 import sys
@@ -24,7 +24,7 @@ except ValueError:
 google = __import__('google.appengine.ext.webapp')
 webapp = google.appengine.ext.webapp
 
-from pyamf import remoting
+from pyamf import remoting, DecodeError
 from pyamf.remoting import gateway
 
 __all__ = ['WebAppGateway']
@@ -72,24 +72,19 @@ class WebAppGateway(webapp.RequestHandler, gateway.BaseGateway):
         stream = None
         timezone_offset = self._get_timezone_offset()
 
-
         # Decode the request
         try:
             request = remoting.decode(body, strict=self.strict,
                 logger=self.logger, timezone_offset=timezone_offset)
-        except (KeyboardInterrupt, SystemExit):
-            raise
-        except:
-            fe = gateway.format_exception()
-
+        except (DecodeError, IOError):
             if self.logger:
-                self.logger.exception(fe)
+                self.logger.exception('Error decoding AMF request')
 
             response = ("400 Bad Request\n\nThe request body was unable to "
                 "be successfully decoded.")
 
             if self.debug:
-                response += "\n\nTraceback:\n\n%s" % fe
+                response += "\n\nTraceback:\n\n%s" % gateway.format_exception()
 
             self.error(400)
             self.response.headers['Content-Type'] = 'text/plain'
@@ -97,26 +92,17 @@ class WebAppGateway(webapp.RequestHandler, gateway.BaseGateway):
             self.response.out.write(response)
 
             return
-
-        if self.logger:
-            self.logger.info("AMF Request: %r" % request)
-
-        # Process the request
-        try:
-            response = self.getResponse(request)
         except (KeyboardInterrupt, SystemExit):
             raise
         except:
-            fe = gateway.format_exception()
-
             if self.logger:
-                self.logger.exception(fe)
+                self.logger.exception('Unexpected error decoding AMF request')
 
-            response = "500 Internal Server Error\n\nThe request was " \
-                "unable to be successfully processed."
+            response = ('500 Internal Server Error\n\n'
+                'An unexpected error occurred.')
 
             if self.debug:
-                response += "\n\nTraceback:\n\n%s" % fe
+                response += "\n\nTraceback:\n\n%s" % gateway.format_exception()
 
             self.error(500)
             self.response.headers['Content-Type'] = 'text/plain'
@@ -126,23 +112,46 @@ class WebAppGateway(webapp.RequestHandler, gateway.BaseGateway):
             return
 
         if self.logger:
-            self.logger.info("AMF Response: %r" % response)
+            self.logger.debug("AMF Request: %r" % request)
+
+        # Process the request
+        try:
+            response = self.getResponse(request)
+        except (KeyboardInterrupt, SystemExit):
+            raise
+        except:
+            if self.logger:
+                self.logger.exception('Error processing AMF request')
+
+            response = ("500 Internal Server Error\n\nThe request was " \
+                "unable to be successfully processed.")
+
+            if self.debug:
+                response += "\n\nTraceback:\n\n%s" % gateway.format_exception()
+
+            self.error(500)
+            self.response.headers['Content-Type'] = 'text/plain'
+            self.response.headers['Server'] = gateway.SERVER_NAME
+            self.response.out.write(response)
+
+            return
+
+        if self.logger:
+            self.logger.debug("AMF Response: %r" % response)
 
         # Encode the response
         try:
             stream = remoting.encode(response, strict=self.strict,
                 logger=self.logger, timezone_offset=timezone_offset)
         except:
-            fe = gateway.format_exception()
-
             if self.logger:
-                self.logger.exception(fe)
+                self.logger.exception('Error encoding AMF request')
 
-            response = "500 Internal Server Error\n\nThe request was " \
-                "unable to be encoded."
+            response = ("500 Internal Server Error\n\nThe request was " \
+                "unable to be encoded.")
 
             if self.debug:
-                response += "\n\nTraceback:\n\n%s" % fe
+                response += "\n\nTraceback:\n\n%s" % gateway.format_exception()
 
             self.error(500)
             self.response.headers['Content-Type'] = 'text/plain'

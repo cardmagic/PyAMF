@@ -19,9 +19,8 @@ U{Flash Player<http://en.wikipedia.org/wiki/Flash_Player>}.
 import types
 import inspect
 
-from pyamf import util
+from pyamf import util, versions as v
 from pyamf.adapters import register_adapters
-
 
 try:
     set
@@ -38,7 +37,7 @@ __all__ = [
 ]
 
 #: PyAMF version number.
-__version__ = (0, 6)
+__version__ = version = v.Version(0, 6)
 
 #: Class mapping support.
 CLASS_CACHE = {}
@@ -47,7 +46,13 @@ CLASS_LOADERS = []
 #: Custom type map.
 TYPE_MAP = {}
 #: Maps error classes to string codes.
-ERROR_CLASS_MAP = {}
+ERROR_CLASS_MAP = {
+    TypeError.__name__: TypeError,
+    KeyError.__name__: KeyError,
+    LookupError.__name__: LookupError,
+    IndexError.__name__: IndexError,
+    NameError.__name__: NameError
+}
 #: Alias mapping support
 ALIAS_TYPES = {}
 
@@ -245,6 +250,8 @@ class ClassAlias(object):
     """
     Class alias. Provides class/instance meta data to the En/Decoder to allow
     fine grain control and some performance increases.
+
+    @ivar bases: A list of (class, alias) for all bases of this alias.
     """
 
     def __init__(self, klass, alias=None, **kwargs):
@@ -267,7 +274,7 @@ class ClassAlias(object):
         self._compiled = False
         self.anonymous = False
         self.sealed = None
-        self.bases = []
+        self.bases = None
 
         if self.alias is None:
             self.anonymous = True
@@ -310,6 +317,7 @@ class ClassAlias(object):
         self.encodable_properties = set()
         self.inherited_dynamic = None
         self.inherited_sealed = None
+        self.bases = []
 
         self.exclude_attrs = set(self.exclude_attrs or [])
         self.readonly_attrs = set(self.readonly_attrs or [])
@@ -343,8 +351,8 @@ class ClassAlias(object):
 
         mro = inspect.getmro(self.klass)[1:]
 
-        for x in mro:
-            self._compile_base_class(x)
+        for c in mro:
+            self._compile_base_class(c)
 
         self.getCustomProperties()
 
@@ -499,41 +507,48 @@ class ClassAlias(object):
     def checkClass(self, klass):
         """
         This function is used to check if the class being aliased fits certain
-        criteria. The default is to check that the C{__init__} constructor does
-        not pass in arguments.
+        criteria. The default is to check that C{__new__} is available or the
+        C{__init__} constructor does not need additional arguments.
 
         @since: 0.4
-        @raise TypeError: C{__init__} doesn't support additional arguments
+        @raise TypeError: C{__new__} not available and C{__init__} requires
+            additional arguments
         """
+        # Check for __new__ support.
+        if hasattr(klass, '__new__') and callable(klass.__new__):
+            # Should be good to go.
+            return
+
         # Check that the constructor of the class doesn't require any additonal
         # arguments.
-        if not (hasattr(klass, '__init__') and hasattr(klass.__init__, 'im_func')):
+        if not (hasattr(klass, '__init__') and callable(klass.__init__)):
             return
 
         klass_func = klass.__init__.im_func
 
-        # built-in classes don't have func_code
-        if hasattr(klass_func, 'func_code') and (
-           klass_func.func_code.co_argcount - len(klass_func.func_defaults or []) > 1):
-            args = list(klass_func.func_code.co_varnames)
-            values = list(klass_func.func_defaults or [])
+        if not hasattr(klass_func, 'func_code'):
+            # Can't examine it, assume it's OK.
+            return
 
-            if not values:
-                sign = "%s.__init__(%s)" % (klass.__name__, ", ".join(args))
-            else:
-                named_args = zip(args[len(args) - len(values):], values)
-                sign = "%s.%s.__init__(%s, %s)" % (
-                    klass.__module__, klass.__name__,
-                    ", ".join(args[:0-len(values)]),
-                    ", ".join(map(lambda x: "%s=%s" % x, named_args)))
+        if klass_func.func_defaults:
+            available_arguments = len(klass_func.func_defaults) + 1
+        else:
+            available_arguments = 1
 
-            raise TypeError("__init__ doesn't support additional arguments: %s"
-                % sign)
+        needed_arguments = klass_func.func_code.co_argcount
+
+        if available_arguments >= needed_arguments:
+            # Looks good to me.
+            return
+
+        spec = inspect.getargspec(klass_func)
+
+        raise TypeError("__init__ doesn't support additional arguments: %s"
+            % inspect.formatargspec(*spec))
 
     def getEncodableAttributes(self, obj, codec=None):
         """
-        Returns a C{tuple} containing a dict of static and dynamic attributes
-        for an object to encode.
+        Returns a dict of attributes to be encoded or None.
 
         @param codec: An optional argument that will contain the en/decoder
             instance calling this function.
@@ -542,28 +557,21 @@ class ClassAlias(object):
         if not self._compiled:
             self.compile()
 
-        static_attrs = {}
-        dynamic_attrs = {}
+        attrs = {}
 
         if self.static_attrs:
             for attr in self.static_attrs:
-                try:
-                    static_attrs[attr] = getattr(obj, attr)
-                except AttributeError:
-                    static_attrs[attr] = Undefined
+                attrs[attr] = getattr(obj, attr, Undefined)
 
         if not self.dynamic:
             if self.non_static_encodable_properties:
                 for attr in self.non_static_encodable_properties:
-                    dynamic_attrs[attr] = getattr(obj, attr)
+                    attrs[attr] = getattr(obj, attr)
 
-            if not static_attrs:
-                static_attrs = None
+            if not attrs:
+                attrs = None
 
-            if not dynamic_attrs:
-                dynamic_attrs = None
-
-            return static_attrs, dynamic_attrs
+            return attrs
 
         dynamic_props = util.get_properties(obj)
 
@@ -581,29 +589,20 @@ class ClassAlias(object):
 
         if self.klass is dict:
             for attr in dynamic_props:
-                dynamic_attrs[attr] = obj[attr]
+                attrs[attr] = obj[attr]
         else:
             for attr in dynamic_props:
-                dynamic_attrs[attr] = getattr(obj, attr)
+                attrs[attr] = getattr(obj, attr)
 
-        if self.proxy_attrs is not None:
-            if static_attrs:
-                for k, v in static_attrs.copy().iteritems():
-                    if k in self.proxy_attrs:
-                        static_attrs[k] = self.getProxiedAttribute(k, v)
+        if self.proxy_attrs is not None and attrs:
+            for k, v in attrs.copy().iteritems():
+                if k in self.proxy_attrs:
+                    attrs[k] = self.getProxiedAttribute(k, v)
 
-            if dynamic_attrs:
-                for k, v in dynamic_attrs.copy().iteritems():
-                    if k in self.proxy_attrs:
-                        dynamic_attrs[k] = self.getProxiedAttribute(k, v)
+        if not attrs:
+            attrs = None
 
-        if not static_attrs:
-            static_attrs = None
-
-        if not dynamic_attrs:
-            dynamic_attrs = None
-
-        return static_attrs, dynamic_attrs
+        return attrs
 
     def getDecodableAttributes(self, obj, attrs, codec=None):
         """
@@ -722,7 +721,10 @@ class ClassAlias(object):
 
         @return: Instance of C{self.klass}.
         """
-        return self.klass(*args, **kwargs)
+        if hasattr(self.klass, '__new__') and callable(self.klass.__new__):
+            return self.klass.__new__(self.klass)
+
+        return self.klass()
 
 
 class TypedObject(dict):
@@ -790,15 +792,15 @@ class ErrorAlias(ClassAlias):
         self.exclude_attrs.update(['args'])
 
     def getEncodableAttributes(self, obj, **kwargs):
-        sa, da = ClassAlias.getEncodableAttributes(self, obj, **kwargs)
+        attrs = ClassAlias.getEncodableAttributes(self, obj, **kwargs)
 
-        if not da:
-            da = {}
+        if not attrs:
+            attrs = {}
 
-        da['message'] = str(obj)
-        da['name'] = obj.__class__.__name__
+        attrs['message'] = str(obj)
+        attrs['name'] = obj.__class__.__name__
 
-        return sa, da
+        return attrs
 
 
 class BaseDecoder(object):
@@ -1539,6 +1541,15 @@ def register_alias_type(klass, *args):
             check_type_registered(arg)
 
     ALIAS_TYPES[klass] = args
+
+
+def unregister_alias_type(klass):
+    """
+    Removes the klass from the ALIAS_TYPE register.
+
+    @see: L{register_alias_type}
+    """
+    return ALIAS_TYPES.pop(klass, None)
 
 
 def register_package(module=None, package=None, separator='.', ignore=[], strict=True):
