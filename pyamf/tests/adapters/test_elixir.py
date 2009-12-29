@@ -96,22 +96,30 @@ class ClassAliasTestCase(BaseTestCase):
         g = m.genres[0]
         d = m.director
 
-        static, dynamic = self.movie_alias.getEncodableAttributes(m)
+        attrs = self.movie_alias.getEncodableAttributes(m)
 
-        self.assertEquals(static, {
+        self.assertEquals(attrs, {
             'genres': [g],
             'description': None,
             'title': u'Blade Runner',
             'director': d,
-            'year': 1982
+            'year': 1982,
+            'sa_key': [u'Blade Runner', 1982],
+            'sa_lazy': []
         })
-
-        self.assertEquals(dynamic, {'sa_key': [u'Blade Runner', 1982], 'sa_lazy': []})
 
     def test_inheritance(self):
         d = Director.query.filter_by(name=u"Ridley Scott").one()
 
-        print self.director_alias.getEncodableAttributes(d)
+        attrs = self.director_alias.getEncodableAttributes(d)
+
+        self.assertEquals(attrs, {
+            'movies': d.movies,
+            'sa_key': [u'Ridley Scott'],
+            'person_name': u'Ridley Scott',
+            'name': u'Ridley Scott',
+            'sa_lazy': []
+        })
 
 
 def suite():
