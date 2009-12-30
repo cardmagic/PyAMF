@@ -2,18 +2,17 @@
 # See LICENSE.txt for details.
 
 """
-B{PyAMF} provides B{A}ction B{M}essage B{F}ormat
-(U{AMF<http://en.wikipedia.org/wiki/Action_Message_Format>}) support for
-Python that is compatible with the Adobe
-U{Flash Player<http://en.wikipedia.org/wiki/Flash_Player>}.
+*PyAMF* provides Action Message Format (AMF_) support for Python that is
+compatible with the Adobe `Flash Player`_.
 
-@copyright: Copyright (c) 2007-2009 The PyAMF Project. All Rights Reserved.
-@contact: U{users@pyamf.org<mailto:users@pyamf.org>}
-@see: U{http://pyamf.org}
+- **Copyright**: Copyright (c) 2007-2009 The PyAMF Project. All Rights Reserved.
+- **Contact**: users@pyamf.org
+- **See**: http://pyamf.org
+- **Since**: October 2007
+- **Status**: Production/Stable
 
-@since: October 2007
-@version: 0.6
-@status: Production/Stable
+.. _AMF: http://en.wikipedia.org/wiki/Action_Message_Format
+.. _Flash Player: http://en.wikipedia.org/wiki/Flash_Player
 """
 
 import types
@@ -53,7 +52,7 @@ ERROR_CLASS_MAP = {
     IndexError.__name__: IndexError,
     NameError.__name__: NameError
 }
-#: Alias mapping support
+#: Alias mapping support.
 ALIAS_TYPES = {}
 
 #: Specifies that objects are serialized using AMF for ActionScript 1.0
@@ -65,7 +64,7 @@ AMF3 = 3
 #: Supported AMF encoding types.
 ENCODING_TYPES = (AMF0, AMF3)
 
-#: Default encoding
+#: Default encoding.
 DEFAULT_ENCODING = AMF0
 
 
@@ -109,8 +108,8 @@ class EncodeError(BaseError):
     """
     Raised if the element could not be encoded to the stream.
 
-    @bug: See U{Docuverse blog (external)
-    <http://www.docuverse.com/blog/donpark/2007/05/14/flash-9-amf3-bug>}
+    See `Docuverse blog (external)
+    <http://www.docuverse.com/blog/donpark/2007/05/14/flash-9-amf3-bug>`_
     for more info about the empty key string array bug.
     """
 
@@ -126,7 +125,7 @@ class UnknownClassAlias(ClassAliasError):
     Raised if the AMF stream specifies an Actionscript class that does not
     have a Python class alias.
 
-    @see: L{register_class}
+    **See**: `register_class`
     """
 
 
@@ -1006,7 +1005,7 @@ def register_class(klass, alias=None):
     """
     Registers a class to be used in the data streaming.
 
-    @return: The registered L{ClassAlias}.
+    :return: The registered `ClassAlias`.
     """
     meta = util.get_class_meta(klass)
 
