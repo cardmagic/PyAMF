@@ -20,8 +20,8 @@ Python
 
 Python_ AMF examples are available for:
 
-- `httplib <../../examples/general/authentication/python/client.py>`_ -- Python AMF client
-- `wsgiref <../../examples/general/authentication/python/server.py>`_ -- Python AMF server
+- `httplib <../examples/general/authentication/python/client.py>`_ -- Python AMF client
+- `wsgiref <../examples/general/authentication/python/server.py>`_ -- Python AMF server
 
 
 Actionscript

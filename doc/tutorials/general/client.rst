@@ -63,15 +63,22 @@ Exception Handling
 
 As of PyAMF 0.6, the client will now raise an appropriate error if remoting
 call returns an error. The default behaviour is to raise a ``pyamf.remoting.RemotingError``
-but this behaviour can be modified.
+but this behaviour can be modified:
+
+.. code-block:: python
+
+    # service method    def type_error():        raise TypeError('some useful message here')
+
+And from the console:
 
 .. literalinclude:: ../examples/general/client/exception.py
-    :linenos:
+
 
 The gateway returns an error code which is mapped to an exception class.
-Use ``pyamf.add_error_class`` to add new code/class combos. A number of builtin
-exceptions are automatically mapped, ``TypeError``, ``LookupError``, ``KeyError``,
+Use ``pyamf.add_error_class`` to add new code/class combos. A number of built-in
+exceptions are automatically mapped: ``TypeError``, ``LookupError``, ``KeyError``,
 ``IndexError``, ``NameError``.
+
 
 More
 ====

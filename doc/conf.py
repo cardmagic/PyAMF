@@ -131,6 +131,7 @@ html_sidebars = {
 html_additional_pages = {
     'download': 'download.html',
     'index': 'indexcontent.html',
+    'tutorials/index': 'tutorials.html',
 }
 
 # Content template for the index page, filename relative to this file.
@@ -140,7 +141,7 @@ html_index = 'indexcontent.html'
 html_use_modindex = True
 
 # If true, the reST sources are included in the HTML build as _sources/<name>.
-html_copy_source = True
+html_copy_source = False
 
 # Output an OpenSearch description file.
 html_use_opensearch = 'http://docs.pyamf.org'
