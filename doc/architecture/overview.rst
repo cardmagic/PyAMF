@@ -10,8 +10,9 @@ summary of all new features.
 - :mod:`AMF3 <pyamf.amf3>` encoder/decoder for the new AMF format in Adobe Flash Player 9
   and newer
 - Optional C-extension for maximum performance, created using `Cython`_
-- Support for ``IExternalizable``, ``ArrayCollection``, ``ObjectProxy``,
-  ``ByteArray``, ``RecordSet``, ``RemoteObject`` and ``more``
+- Support for ``IExternalizable``, :class:`ArrayCollection <pyamf.flex.ArrayCollection>`,
+  :class:`ObjectProxy <pyamf.flex.ObjectProxy>`, :class:`ByteArray <pyamf.amf3.ByteArray>`,
+  :class:`RecordSet <pyamf.amf0.RecordSet>`, ``RemoteObject`` and ``more``
 - Remoting gateways for :doc:`Twisted <../tutorials/gateways/twisted>`,
   :doc:`Django <../tutorials/gateways/django>`,
   :doc:`Google App Engine <../tutorials/gateways/appengine>`,

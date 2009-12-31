@@ -7,7 +7,7 @@
    This page describes how to setup the UDP example application
    using `Adobe AIR 2.0`_, PyAMF and Twisted_.
 
-   Adobe AIR 2.0 now support `UDP sockets`_ allowing you to send
+   Adobe AIR 2.0 now supports `UDP sockets`_ allowing you to send
    and receive messages using the Universal Datagram Protocol (UDP).
    The example application also enumerates the list of hardware
    and software network interfaces available on the client computer.

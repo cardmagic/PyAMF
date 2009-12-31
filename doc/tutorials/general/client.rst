@@ -75,9 +75,11 @@ And from the console:
 
 
 The gateway returns an error code which is mapped to an exception class.
-Use ``pyamf.add_error_class`` to add new code/class combos. A number of built-in
+
+Use :func:`pyamf.add_error_class` to add new code/class combos. A number of built-in
 exceptions are automatically mapped: ``TypeError``, ``LookupError``, ``KeyError``,
-``IndexError``, ``NameError``.
+``IndexError``, ``NameError``. :func:`pyamf.remove_error_class` is used for removing
+classes.
 
 
 More
