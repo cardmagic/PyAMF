@@ -30,11 +30,11 @@ class ElixirAdapter(adapter.SaMappedClassAlias):
         self.descriptor = self.klass._descriptor
         self.parent_descriptor = None
 
-        if self.descriptor.polymorphic:
-            self.exclude_attrs.update([self.descriptor.polymorphic])
-
         if self.descriptor.parent:
             self.parent_descriptor = self.descriptor.parent._descriptor
+
+        if self.descriptor.polymorphic:
+            self.exclude_attrs.update([self.descriptor.polymorphic])
 
         for prop in self.descriptor.relationships:
             if hasattr(prop, 'foreign_key'):
