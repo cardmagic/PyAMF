@@ -6,7 +6,7 @@
 """
 AMF Utilities.
 
-@since: 0.1.0
+:since: 0.1.0
 """
 
 import struct
@@ -64,9 +64,9 @@ class StringIOProxy(object):
     """
     I am a C{StringIO} type object containing byte data from the AMF stream.
 
-    @see: U{ByteArray on OSFlash (external)
+    :see: U{ByteArray on OSFlash (external)
     <http://osflash.org/documentation/amf3#x0c_-_bytearray>}
-    @see: U{Parsing ByteArrays on OSFlash (external)
+    :see: U{Parsing ByteArrays on OSFlash (external)
     <http://osflash.org/documentation/amf3/parsing_byte_arrays>}
     """
 
@@ -74,7 +74,7 @@ class StringIOProxy(object):
 
     def __init__(self, buf=None):
         """
-        @raise TypeError: Unable to coerce C{buf} to C{StringIO}.
+        :raise TypeError: Unable to coerce C{buf} to C{StringIO}.
         """
         self._buffer = StringIOProxy._wrapped_class()
 
@@ -115,10 +115,10 @@ class StringIOProxy(object):
         Sets the file-pointer offset, measured from the beginning of this stream,
         at which the next write operation will occur.
 
-        @param pos:
-        @type pos: C{int}
-        @param mode:
-        @type mode: C{int}
+        :param pos:
+        :type pos: C{int}
+        :param mode:
+        :type mode: C{int}
         """
         return self._buffer.seek(pos, mode)
 
@@ -132,8 +132,8 @@ class StringIOProxy(object):
         """
         Truncates the stream to the specified length.
 
-        @param size: The length of the stream, in bytes.
-        @type size: C{int}
+        :param size: The length of the stream, in bytes.
+        :type size: C{int}
         """
         if size == 0:
             self._buffer = StringIOProxy._wrapped_class()
@@ -154,8 +154,8 @@ class StringIOProxy(object):
         """
         Writes the content of the specified C{s} into this buffer.
 
-        @param s:
-        @type s:
+        :param s:
+        :type s:
         """
         self._buffer.write(s)
         self._len_changed = True
@@ -189,7 +189,7 @@ class StringIOProxy(object):
         Chops the tail off the stream starting at 0 and ending at C{tell()}.
         The stream pointer is set to 0 at the end of this function.
 
-        @since: 0.4
+        :since: 0.4
         """
         try:
             bytes = self.read()
@@ -208,9 +208,9 @@ class DataTypeMixIn(object):
     Provides methods for reading and writing basic data types for file-like
     objects.
 
-    @ivar endian: Byte ordering used to represent the data. Default byte order
-        is L{ENDIAN_NETWORK}.
-    @type endian: C{str}
+    :ivar endian: Byte ordering used to represent the data. Default byte order
+        is `ENDIAN_NETWORK`.
+    :type endian: `str`
     """
 
     #: Network byte order
@@ -226,8 +226,8 @@ class DataTypeMixIn(object):
 
     def _read(self, length):
         """
-        Reads C{length} bytes from the stream. If an attempt to read past the
-        end of the buffer is made, L{IOError} is raised.
+        Reads `length` bytes from the stream. If an attempt to read past the
+        end of the buffer is made, `IOError` is raised.
         """
         bytes = self.read(length)
 
@@ -242,7 +242,7 @@ class DataTypeMixIn(object):
         """
         Whether this system is big endian or not.
 
-        @rtype: C{bool}
+        :rtype: `bool`
         """
         if self.endian == DataTypeMixIn.ENDIAN_NATIVE:
             return DataTypeMixIn._system_endian == DataTypeMixIn.ENDIAN_BIG
@@ -251,18 +251,18 @@ class DataTypeMixIn(object):
 
     def read_uchar(self):
         """
-        Reads an C{unsigned char} from the stream.
+        Reads an `unsigned char` from the stream.
         """
         return struct.unpack("B", self._read(1))[0]
 
     def write_uchar(self, c):
         """
-        Writes an C{unsigned char} to the stream.
+        Writes an `unsigned char` to the stream.
 
-        @param c: Unsigned char
-        @type c: C{int}
-        @raise TypeError: Unexpected type for int C{c}.
-        @raise OverflowError: Not in range.
+        :param c: Unsigned char
+        :type c: `int`
+        :raise TypeError: Unexpected type for int `c`.
+        :raise OverflowError: Not in range.
         """
         if type(c) not in int_types:
             raise TypeError('expected an int (got:%r)' % (type(c),))
@@ -274,18 +274,18 @@ class DataTypeMixIn(object):
 
     def read_char(self):
         """
-        Reads a C{char} from the stream.
+        Reads a `char` from the stream.
         """
         return struct.unpack("b", self._read(1))[0]
 
     def write_char(self, c):
         """
-        Write a C{char} to the stream.
+        Write a `char` to the stream.
 
-        @param c: char
-        @type c: C{int}
-        @raise TypeError: Unexpected type for int C{c}.
-        @raise OverflowError: Not in range.
+        :param c: char
+        :type c: `int`
+        :raise TypeError: Unexpected type for int `c`.
+        :raise OverflowError: Not in range.
         """
         if type(c) not in int_types:
             raise TypeError('expected an int (got:%r)' % (type(c),))
@@ -305,10 +305,10 @@ class DataTypeMixIn(object):
         """
         Writes a 2 byte unsigned integer to the stream.
 
-        @param s: 2 byte unsigned integer
-        @type s: C{int}
-        @raise TypeError: Unexpected type for int C{s}.
-        @raise OverflowError: Not in range.
+        :param s: 2 byte unsigned integer
+        :type s: C{int}
+        :raise TypeError: Unexpected type for int C{s}.
+        :raise OverflowError: Not in range.
         """
         if type(s) not in int_types:
             raise TypeError('expected an int (got:%r)' % (type(s),))
@@ -328,10 +328,10 @@ class DataTypeMixIn(object):
         """
         Writes a 2 byte integer to the stream.
 
-        @param s: 2 byte integer
-        @type s: C{int}
-        @raise TypeError: Unexpected type for int C{s}.
-        @raise OverflowError: Not in range.
+        :param s: 2 byte integer
+        :type s: C{int}
+        :raise TypeError: Unexpected type for int C{s}.
+        :raise OverflowError: Not in range.
         """
         if type(s) not in int_types:
             raise TypeError('expected an int (got:%r)' % (type(s),))
@@ -351,10 +351,10 @@ class DataTypeMixIn(object):
         """
         Writes a 4 byte unsigned integer to the stream.
 
-        @param l: 4 byte unsigned integer
-        @type l: C{int}
-        @raise TypeError: Unexpected type for int C{l}.
-        @raise OverflowError: Not in range.
+        :param l: 4 byte unsigned integer
+        :type l: C{int}
+        :raise TypeError: Unexpected type for int C{l}.
+        :raise OverflowError: Not in range.
         """
         if type(l) not in int_types:
             raise TypeError('expected an int (got:%r)' % (type(l),))
@@ -374,10 +374,10 @@ class DataTypeMixIn(object):
         """
         Writes a 4 byte integer to the stream.
 
-        @param l: 4 byte integer
-        @type l: C{int}
-        @raise TypeError: Unexpected type for int C{l}.
-        @raise OverflowError: Not in range.
+        :param l: 4 byte integer
+        :type l: C{int}
+        :raise TypeError: Unexpected type for int C{l}.
+        :raise OverflowError: Not in range.
         """
         if type(l) not in int_types:
             raise TypeError('expected an int (got:%r)' % (type(l),))
@@ -391,7 +391,7 @@ class DataTypeMixIn(object):
         """
         Reads a 24 bit unsigned integer from the stream.
 
-        @since: 0.4
+        :since: 0.4
         """
         order = None
 
@@ -411,11 +411,11 @@ class DataTypeMixIn(object):
         """
         Writes a 24 bit unsigned integer to the stream.
 
-        @since: 0.4
-        @param n: 24 bit unsigned integer
-        @type n: C{int}
-        @raise TypeError: Unexpected type for int C{n}.
-        @raise OverflowError: Not in range.
+        :since: 0.4
+        :param n: 24 bit unsigned integer
+        :type n: C{int}
+        :raise TypeError: Unexpected type for int C{n}.
+        :raise OverflowError: Not in range.
         """
         if type(n) not in int_types:
             raise TypeError('expected an int (got:%r)' % (type(n),))
@@ -437,7 +437,7 @@ class DataTypeMixIn(object):
         """
         Reads a 24 bit integer from the stream.
 
-        @since: 0.4
+        :since: 0.4
         """
         n = self.read_24bit_uint()
 
@@ -451,11 +451,11 @@ class DataTypeMixIn(object):
         """
         Writes a 24 bit integer to the stream.
 
-        @since: 0.4
-        @param n: 24 bit integer
-        @type n: C{int}
-        @raise TypeError: Unexpected type for int C{n}.
-        @raise OverflowError: Not in range.
+        :since: 0.4
+        :param n: 24 bit integer
+        :type n: C{int}
+        :raise TypeError: Unexpected type for int C{n}.
+        :raise OverflowError: Not in range.
         """
         if type(n) not in int_types:
             raise TypeError('expected an int (got:%r)' % (type(n),))
@@ -486,9 +486,9 @@ class DataTypeMixIn(object):
         """
         Writes an 8 byte float to the stream.
 
-        @param d: 8 byte float
-        @type d: C{float}
-        @raise TypeError: Unexpected type for float C{d}.
+        :param d: 8 byte float
+        :type d: C{float}
+        :raise TypeError: Unexpected type for float C{d}.
         """
         if not type(d) is float:
             raise TypeError('expected a float (got:%r)' % (type(d),))
@@ -505,9 +505,9 @@ class DataTypeMixIn(object):
         """
         Writes a 4 byte float to the stream.
 
-        @param f: 4 byte float
-        @type f: C{float}
-        @raise TypeError: Unexpected type for float C{f}.
+        :param f: 4 byte float
+        :type f: C{float}
+        :raise TypeError: Unexpected type for float C{f}.
         """
         if type(f) is not float:
             raise TypeError('expected a float (got:%r)' % (type(f),))
@@ -518,7 +518,7 @@ class DataTypeMixIn(object):
         """
         Reads a UTF-8 string from the stream.
 
-        @rtype: C{unicode}
+        :rtype: C{unicode}
         """
         str = struct.unpack("%s%ds" % (self.endian, length), self.read(length))[0]
 
@@ -528,8 +528,8 @@ class DataTypeMixIn(object):
         """
         Writes a unicode object to the stream in UTF-8.
 
-        @param u: unicode object
-        @raise TypeError: Unexpected type for str C{u}.
+        :param u: unicode object
+        :raise TypeError: Unexpected type for str C{u}.
         """
         if type(u) not in str_types:
             raise TypeError('expected a str (got:%r)' % (type(u),))
@@ -553,13 +553,13 @@ class BufferedByteStream(StringIOProxy, DataTypeMixIn):
      - Raises L{IOError} if reading past end.
      - Allows you to C{peek()} at the next byte.
 
-    @see: L{cBufferedByteStream<cpyamf.util.cBufferedByteStream>}
+    :see: L{cBufferedByteStream<cpyamf.util.cBufferedByteStream>}
     """
 
     def __init__(self, buf=None):
         """
-        @param buf: Initial byte stream.
-        @type buf: C{str} or C{StringIO} instance
+        :param buf: Initial byte stream.
+        :type buf: C{str} or C{StringIO} instance
         """
         StringIOProxy.__init__(self, buf=buf)
 
@@ -570,7 +570,7 @@ class BufferedByteStream(StringIOProxy, DataTypeMixIn):
         Reads up to the specified number of bytes from the stream into
         the specified byte array of specified length.
 
-        @raise IOError: Attempted to read past the end of the buffer.
+        :raise IOError: Attempted to read past the end of the buffer.
         """
         if length == -1 and self.at_eof():
             raise IOError('Attempted to read from the buffer but already at '
@@ -586,12 +586,12 @@ class BufferedByteStream(StringIOProxy, DataTypeMixIn):
         Looks C{size} bytes ahead in the stream, returning what it finds,
         returning the stream pointer to its initial position.
 
-        @param size: Default is 1.
-        @type size: C{int}
-        @raise ValueError: Trying to peek backwards.
+        :param size: Default is 1.
+        :type size: C{int}
+        :raise ValueError: Trying to peek backwards.
 
-        @rtype:
-        @return: Bytes.
+        :rtype:
+        :return: Bytes.
         """
         if size == -1:
             return self.peek(len(self) - self.tell())
@@ -613,8 +613,8 @@ class BufferedByteStream(StringIOProxy, DataTypeMixIn):
         """
         Returns number of remaining bytes.
 
-        @rtype: C{number}
-        @return: Number of remaining bytes.
+        :rtype: C{number}
+        :return: Number of remaining bytes.
         """
         return len(self) - self.tell()
 
@@ -622,7 +622,7 @@ class BufferedByteStream(StringIOProxy, DataTypeMixIn):
         """
         Returns C{True} if the internal pointer is at the end of the stream.
 
-        @rtype: C{bool}
+        :rtype: C{bool}
         """
         return self.tell() == len(self)
 
@@ -631,9 +631,9 @@ class BufferedByteStream(StringIOProxy, DataTypeMixIn):
         Append data to the end of the stream. The pointer will not move if
         this operation is successful.
 
-        @param data: The data to append to the stream.
-        @type data: C{str} or C{unicode}
-        @raise TypeError: data is not C{str} or C{unicode}
+        :param data: The data to append to the stream.
+        :type data: C{str} or C{unicode}
+        :raise TypeError: data is not C{str} or C{unicode}
         """
         t = self.tell()
 
@@ -669,7 +669,7 @@ class IndexedCollection(object):
     A class that provides a quick and clean way to store references and
     referenced objects.
 
-    @note: All attributes on the instance are private.
+    :note: All attributes on the instance are private.
     """
 
     def __init__(self, use_hash=False):
@@ -693,7 +693,7 @@ class IndexedCollection(object):
 
         If the reference is not found, C{None} will be returned.
 
-        @raise TypeError: Bad reference type.
+        :raise TypeError: Bad reference type.
         """
         if not isinstance(ref, int_types):
             raise TypeError("Bad reference type, got %s" % (type(ref),))
@@ -710,8 +710,8 @@ class IndexedCollection(object):
         If the object is not contained within the collection, C{None} will be
         returned.
 
-        @param obj: The object to find the reference to
-        @return: An C{int} representing the reference or C{None} is the object
+        :param obj: The object to find the reference to
+        :return: An C{int} representing the reference or C{None} is the object
             is not contained within the collection.
         """
         return self.dict.get(self.func(obj), None)
@@ -720,8 +720,8 @@ class IndexedCollection(object):
         """
         Appends C{obj} to this index.
 
-        @note: Uniqueness is not checked
-        @return: The reference to C{obj} in this index.
+        :note: Uniqueness is not checked
+        :return: The reference to C{obj} in this index.
         """
         h = self.func(obj)
 
@@ -761,7 +761,7 @@ class IndexedMap(IndexedCollection):
     """
     Like L{IndexedCollection}, but also maps to another object.
 
-    @since: 0.4
+    :since: 0.4
     """
 
     def __init__(self, use_hash=False):
@@ -779,12 +779,12 @@ class IndexedMap(IndexedCollection):
         """
         Returns the mapped object by reference.
 
-        @param ref: The reference to the object contained within the
+        :param ref: The reference to the object contained within the
             collection.
-        @type ref: C{int}
-        @return: The referenced object or C{None} if not found within this
+        :type ref: C{int}
+        :return: The referenced object or C{None} if not found within this
             collection.
-        @raise TypeError: Bad reference type.
+        :raise TypeError: Bad reference type.
         """
         if not isinstance(ref, int_types):
             raise TypeError("Bad reference type. Expected int, got %r" % (
@@ -799,7 +799,7 @@ class IndexedMap(IndexedCollection):
         """
         Appends C{obj} to this index.
 
-        @return: The reference to C{obj} in this index.
+        :return: The reference to C{obj} in this index.
         """
         idx = IndexedCollection.append(self, obj)
         diff = idx + 1 - len(self.mapped)
@@ -830,7 +830,7 @@ def find_xml_lib():
     (relatively) and the flexibility that this gives seems to outweigh the
     cost. Time will tell.
 
-    @since: 0.4
+    :since: 0.4
     """
     global xml_types, ET
 
@@ -888,10 +888,10 @@ def hexdump(data):
     """
     Get hexadecimal representation of C{StringIO} data.
 
-    @type data:
-    @param data:
-    @rtype: C{str}
-    @return: Hexadecimal string.
+    :type data:
+    :param data:
+    :rtype: C{str}
+    :return: Hexadecimal string.
     """
     import string
 
@@ -920,12 +920,12 @@ def get_timestamp(d):
     """
     Returns a UTC timestamp for a C{datetime.datetime} object.
 
-    @type d: C{datetime.datetime}
-    @param d: The date object.
-    @return: UTC timestamp.
-    @rtype: C{str}
+    :type d: C{datetime.datetime}
+    :param d: The date object.
+    :return: UTC timestamp.
+    :rtype: C{str}
 
-    @note: Inspiration taken from the U{Intertwingly blog
+    :note: Inspiration taken from the U{Intertwingly blog
     <http://intertwingly.net/blog/2007/09/02/Dealing-With-Dates>}.
     """
     if isinstance(d, datetime.date) and not isinstance(d, datetime.datetime):
@@ -940,10 +940,10 @@ def get_datetime(secs):
     """
     Return a UTC date from a timestamp.
 
-    @type secs: C{long}
-    @param secs: Seconds since 1970.
-    @return: UTC timestamp.
-    @rtype: C{datetime.datetime}
+    :type secs: C{long}
+    :param secs: Seconds since 1970.
+    :return: UTC timestamp.
+    :rtype: C{datetime.datetime}
     """
     if secs < 0 and negative_timestamp_broken:
         return datetime.datetime(1970, 1, 1) + datetime.timedelta(seconds=secs)
@@ -953,7 +953,7 @@ def get_datetime(secs):
 
 def get_properties(obj):
     """
-    @since: 0.5
+    :since: 0.5
     """
     if hasattr(obj, 'keys'):
         return set(obj.keys())
@@ -968,9 +968,9 @@ def set_attrs(obj, attrs):
     A generic function which applies a collection of attributes C{attrs} to
     object C{obj}.
 
-    @param obj: An instance implementing the C{__setattr__} function
-    @param attrs: A collection implementing the C{iteritems} function
-    @type attrs: Usually a dict
+    :param obj: An instance implementing the C{__setattr__} function
+    :param attrs: A collection implementing the C{iteritems} function
+    :type attrs: Usually a dict
     """
     if isinstance(obj, (list, dict)):
         for k, v in attrs.iteritems():
@@ -1003,8 +1003,8 @@ def is_class_sealed(klass):
     Returns a C{boolean} whether or not the supplied class can accept dynamic
     properties.
 
-    @rtype: C{bool}
-    @since: 0.5
+    :rtype: C{bool}
+    :since: 0.5
     """
     mro = inspect.getmro(klass)
     new = False
@@ -1028,8 +1028,8 @@ def get_class_meta(klass):
     Returns a C{dict} containing meta data based on the supplied class, useful
     for class aliasing.
 
-    @rtype: C{dict}
-    @since: 0.5
+    :rtype: C{dict}
+    :since: 0.5
     """
     if not isinstance(klass, (type, types.ClassType)) or klass is object:
         raise TypeError('klass must be a class object, got %r' % type(klass))
@@ -1081,8 +1081,8 @@ def is_float_broken():
     mixing up 'special' floats. This function determines whether this is the
     case.
 
-    @since: 0.4
-    @rtype: C{bool}
+    :since: 0.4
+    :rtype: C{bool}
     """
     global NaN
 
@@ -1091,21 +1091,21 @@ def is_float_broken():
 
 def isNaN(val):
     """
-    @since: 0.5
+    :since: 0.5
     """
     return str(float(val)) == str(NaN)
 
 
 def isPosInf(val):
     """
-    @since: 0.5
+    :since: 0.5
     """
     return str(float(val)) == str(PosInf)
 
 
 def isNegInf(val):
     """
-    @since: 0.5
+    :since: 0.5
     """
     return str(float(val)) == str(NegInf)
 

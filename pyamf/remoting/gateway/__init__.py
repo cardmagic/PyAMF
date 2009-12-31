@@ -4,7 +4,7 @@
 """
 Remoting server implementations.
 
-@since: 0.1.0
+:Since: 0.1.0
 """
 
 import sys
@@ -20,6 +20,7 @@ try:
 except ImportError:
     impl = 'Python'
 
+#: Gateway name, used for SERVER_HEADER
 SERVER_NAME = 'PyAMF/%s %s/%s' % (
     pyamf.version, impl,
     '.'.join(map(lambda x: str(x), sys.version_info[0:3]))
@@ -57,10 +58,10 @@ class ServiceWrapper(object):
     """
     Wraps a supplied service with extra functionality.
 
-    @ivar service: The original service.
-    @type service: C{callable}
-    @ivar description: A description of the service.
-    @type description: C{str}
+    :ivar service: The original service.
+    :type service: `callable`
+    :ivar description: A description of the service.
+    :type description: `str`
     """
     def __init__(self, service, description=None, authenticator=None,
         expose_request=None, preprocessor=None):
@@ -78,10 +79,10 @@ class ServiceWrapper(object):
 
     def _get_service_func(self, method, params):
         """
-        @raise InvalidServiceMethodError: Calls to private methods are not
+        :raise InvalidServiceMethodError: Calls to private methods are not
             allowed.
-        @raise UnknownServiceMethodError: Unknown method.
-        @raise InvalidServiceMethodError: Service method must be callable.
+        :raise UnknownServiceMethodError: Unknown method.
+        :raise InvalidServiceMethodError: Service method must be callable.
         """
         service = None
 
@@ -121,12 +122,12 @@ class ServiceWrapper(object):
 
         If the service is a class, it will be instantiated.
 
-        @param method: The method to call on the service.
-        @type method: C{None} or C{mixed}
-        @param params: The params to pass to the service.
-        @type params: C{list} or C{tuple}
-        @return: The result of the execution.
-        @rtype: C{mixed}
+        :param method: The method to call on the service.
+        :type method: `None` or `mixed`
+        :param params: The params to pass to the service.
+        :type params: `list` or `tuple`
+        :return: The result of the execution.
+        :rtype: `mixed`
         """
         func = self._get_service_func(method, params)
 
@@ -134,7 +135,7 @@ class ServiceWrapper(object):
 
     def getMethods(self):
         """
-        Gets a C{dict} of valid method callables for the underlying service
+        Gets a `dict` of valid method callables for the underlying service
         object.
         """
         callables = {}
@@ -216,13 +217,13 @@ class ServiceRequest(object):
     """
     Remoting service request.
 
-    @ivar request: The request to service.
-    @type request: L{Envelope<pyamf.remoting.Envelope>}
-    @ivar service: Facilitates the request.
-    @type service: L{ServiceWrapper}
-    @ivar method: The method to call on the service. A value of C{None}
+    :ivar request: The request to service.
+    :type request: :class:`Envelope<pyamf.remoting.Envelope>`
+    :ivar service: Facilitates the request.
+    :type service: :class:`ServiceWrapper`
+    :ivar method: The method to call on the service. A value of `None`
         means that the service will be called directly.
-    @type method: C{None} or C{str}
+    :type method: `None` or `str`
     """
     def __init__(self, amf_request, service, method):
         self.request = amf_request
@@ -248,25 +249,25 @@ class BaseGateway(object):
     """
     Generic Remoting gateway.
 
-    @ivar services: A map of service names to callables.
-    @type services: L{ServiceCollection}
-    @ivar authenticator: A callable that will check the credentials of
+    :ivar services: A map of service names to callables.
+    :type services: :class:`ServiceCollection`
+    :ivar authenticator: A callable that will check the credentials of
         the request before allowing access to the service. Will return a
-        C{bool} value.
-    @type authenticator: C{Callable} or C{None}
-    @ivar preprocessor: Called before the actual service method is invoked.
+        `bool` value.
+    :type authenticator: `Callable` or `None`
+    :ivar preprocessor: Called before the actual service method is invoked.
         Useful for setting up sessions etc.
-    @type preprocessor: C{Callable} or C{None}
-    @ivar logger: A logging instance.
-    @ivar strict: Defines whether the gateway should use strict en/decoding.
-    @type strict: C{bool}
-    @ivar timezone_offset: A L{datetime.timedelta} between UTC and the
+    :type preprocessor: `Callable` or `None`
+    :ivar logger: A logging instance.
+    :ivar strict: Defines whether the gateway should use strict en/decoding.
+    :type strict: `bool`
+    :ivar timezone_offset: A `datetime.timedelta` between UTC and the
         timezone to be encoded. Most dates should be handled as UTC to avoid
         confusion but for older legacy systems this is not an option. Supplying
         an int as this will be interpretted in seconds.
-    @ivar debug: Provides debugging information when an error occurs. Use only
+    :ivar debug: Provides debugging information when an error occurs. Use only
         in non production settings.
-    @type debug: C{bool}
+    :type debug: `bool`
     """
 
     _request_class = ServiceRequest
@@ -296,13 +297,16 @@ class BaseGateway(object):
         """
         Adds a service to the gateway.
 
-        @param service: The service to add to the gateway.
-        @type service: C{callable}, class instance, or a module
-        @param name: The name of the service.
-        @type name: C{str}
-        @raise pyamf.remoting.RemotingError: Service already exists.
-        @raise TypeError: C{service} cannot be a scalar value.
-        @raise TypeError: C{service} must be C{callable} or a module.
+        :param service: The service to add to the gateway.
+        :type service: `callable`, class instance, or a module
+        :param name: The name of the service.
+        :type name: `str`
+        :param description: A description of the service.
+        :type description: `str`
+
+        :raise RemotingError: Service already exists.
+        :raise TypeError: `service` cannot be a scalar value.
+        :raise TypeError: `service` must be `callable` or a module.
         """
         if isinstance(service, (int, long, float, basestring)):
             raise TypeError("Service cannot be a scalar value")
@@ -343,9 +347,11 @@ class BaseGateway(object):
         """
         Removes a service from the gateway.
 
-        @param service: The service to remove from the gateway.
-        @type service: C{callable} or a class instance
-        @raise NameError: Service not found.
+        :param service: The service to remove from the gateway.
+        :type service: `callable` or a class instance
+
+        :raise NameError: Service not found.
+        :raise RuntimeError: Unable to remove service.
         """
         if service not in self.services:
             raise NameError("Service %s not found" % str(service))
@@ -366,16 +372,17 @@ class BaseGateway(object):
                 return
 
         # shouldn't ever get here
-        raise RuntimeError("Something went wrong ...")
+        raise RuntimeError("Unable to remove service")
 
     def getServiceRequest(self, request, target):
         """
         Returns a service based on the message.
 
-        @raise UnknownServiceError: Unknown service.
-        @param request: The AMF request.
-        @type request: L{Request<pyamf.remoting.Request>}
-        @rtype: L{ServiceRequest}
+        :param request: The AMF request.
+        :type request: :class:`Request<pyamf.remoting.Request>`
+        :rtype: :class:`ServiceRequest`
+
+        :raise UnknownServiceError: Unknown service.
         """
         try:
             return self._request_class(
@@ -398,8 +405,11 @@ class BaseGateway(object):
         """
         Returns request processor.
 
-        @param request: The AMF message.
-        @type request: L{Request<remoting.Request>}
+        :param request: The AMF message.
+        :type request: :class:`Request<pyamf.remoting.Request>`
+        :return: The AMF request processor.
+        :rtype: :class:`pyamf.remoting.amf3.RequestProcessor` or
+                :class:`pyamf.remoting.amf0.RequestProcessor`
         """
         if request.target == 'null':
             from pyamf.remoting import amf3
@@ -416,22 +426,21 @@ class BaseGateway(object):
 
         Any implementing gateway must define this function.
 
-        @param amf_request: The AMF request.
-        @type amf_request: L{Envelope<pyamf.remoting.Envelope>}
-
-        @return: The AMF response.
-        @rtype: L{Envelope<pyamf.remoting.Envelope>}
+        :param amf_request: The AMF request.
+        :type amf_request: :class:`Envelope<pyamf.remoting.Envelope>`
+        :return: The AMF response.
+        :rtype: :class:`Envelope<pyamf.remoting.Envelope>`
         """
         raise NotImplementedError
 
     def mustExposeRequest(self, service_request):
         """
-        Decides whether the underlying http request should be exposed as the
+        Decides whether the underlying HTTP request should be exposed as the
         first argument to the method call. This is granular, looking at the
         service method first, then at the service level and finally checking
         the gateway.
 
-        @rtype: C{bool}
+        :rtype: `bool`
         """
         expose_request = service_request.service.mustExposeRequest(service_request)
 
@@ -445,10 +454,10 @@ class BaseGateway(object):
 
     def getAuthenticator(self, service_request):
         """
-        Gets an authenticator callable based on the service_request. This is
+        Gets an authenticator callable based on the `service_request`. This is
         granular, looking at the service method first, then at the service
         level and finally to see if there is a global authenticator function
-        for the gateway. Returns C{None} if one could not be found.
+        for the gateway. Returns `None` if one could not be found.
         """
         auth = service_request.service.getAuthenticator(service_request)
 
@@ -462,10 +471,12 @@ class BaseGateway(object):
         Processes an authentication request. If no authenticator is supplied,
         then authentication succeeds.
 
-        @return: Returns a C{bool} based on the result of authorization. A
-            value of C{False} will stop processing the request and return an
+        :type username: `str`
+        :type password: `str`
+        :return: Returns a `bool` based on the result of authorization. A
+            value of `False` will stop processing the request and return an
             error to the client.
-        @rtype: C{bool}
+        :rtype: `bool`
         """
         authenticator = self.getAuthenticator(service_request)
 
@@ -482,10 +493,10 @@ class BaseGateway(object):
 
     def getPreprocessor(self, service_request):
         """
-        Gets a preprocessor callable based on the service_request. This is
+        Gets a preprocessor callable based on the `service_request`. This is
         granular, looking at the service method first, then at the service
         level and finally to see if there is a global preprocessor function
-        for the gateway. Returns C{None} if one could not be found.
+        for the gateway. Returns `None` if one could not be found.
         """
         preproc = service_request.service.getPreprocessor(service_request)
 
@@ -525,12 +536,12 @@ class BaseGateway(object):
 def authenticate(func, c, expose_request=False):
     """
     A decorator that facilitates authentication per method. Setting
-    C{expose_request} to C{True} will set the underlying request object (if
+    `expose_request` to `True` will set the underlying request object (if
     there is one), usually HTTP and set it to the first argument of the
     authenticating callable. If there is no request object, the default is
-    C{None}.
+    `None`.
 
-    @raise TypeError: C{func} and authenticator must be callable.
+    :raise TypeError: `func` and authenticator must be callable.
     """
     if not callable(func):
         raise TypeError('func must be callable')
@@ -553,9 +564,9 @@ def authenticate(func, c, expose_request=False):
 
 def expose_request(func):
     """
-    A decorator that adds an expose_request flag to the underlying callable.
+    A decorator that adds an `expose_request` flag to the underlying callable.
 
-    @raise TypeError: C{func} must be callable.
+    :raise TypeError: `func` must be callable.
     """
     if not callable(func):
         raise TypeError("func must be callable")
@@ -571,12 +582,12 @@ def expose_request(func):
 def preprocess(func, c, expose_request=False):
     """
     A decorator that facilitates preprocessing per method. Setting
-    C{expose_request} to C{True} will set the underlying request object (if
+    `expose_request` to `True` will set the underlying request object (if
     there is one), usually HTTP and set it to the first argument of the
     preprocessing callable. If there is no request object, the default is
-    C{None}.
+    `None`.
 
-    @raise TypeError: C{func} and preprocessor must be callable.
+    :raise TypeError: `func` and preprocessor must be callable.
     """
     if not callable(func):
         raise TypeError('func must be callable')
