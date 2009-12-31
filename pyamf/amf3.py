@@ -31,6 +31,9 @@ import pyamf
 from pyamf import util
 from pyamf.flex import ObjectProxy, ArrayCollection
 
+#: If True encode/decode lists/tuples to L{ArrayCollections<ArrayCollection>}
+#: and dicts to L{ObjectProxy}
+use_proxies_default = False
 
 try:
     set()
@@ -592,6 +595,7 @@ class Context(pyamf.BaseContext):
         self.classes = {}
         self.class_ref = {}
         self.legacy_xml = util.IndexedCollection()
+        self.object_aliases = util.IndexedMap() # Maps one object to another
 
         self.class_idx = 0
 
@@ -607,9 +611,30 @@ class Context(pyamf.BaseContext):
         self.classes = {}
         self.class_ref = {}
         self.legacy_xml.clear()
+        self.object_aliases.clear()
 
         self.class_idx = 0
 
+    def setObjectAlias(self, obj, alias):
+        """
+        Maps an object to an aliased object.
+
+        @since: 0.4
+        """
+        self.object_aliases.map(obj, alias)
+
+    def getObjectAlias(self, obj):
+        """
+        Get an alias of an object.
+
+        @since: 0.4
+        """
+        ref = self.object_aliases.getReferenceTo(obj)
+
+        if ref is None:
+            return None
+
+        return self.object_aliases.getMappedByReference(ref)
 
     def getString(self, ref):
         """
@@ -755,6 +780,11 @@ class Decoder(pyamf.BaseDecoder):
         TYPE_XMLSTRING:  'readXMLString',
         TYPE_BYTEARRAY:  'readByteArray',
     }
+
+    def __init__(self, *args, **kwargs):
+        self.use_proxies = kwargs.pop('use_proxies', use_proxies_default)
+
+        pyamf.BaseDecoder.__init__(self, *args, **kwargs)
 
     def readUndefined(self):
         """
@@ -948,7 +978,7 @@ class Decoder(pyamf.BaseDecoder):
 
         return class_def, alias
 
-    def readObject(self):
+    def readObject(self, use_proxies=None):
         """
         Reads an object from the stream.
 
@@ -956,6 +986,9 @@ class Decoder(pyamf.BaseDecoder):
             only is not allowed.
         @raise pyamf.DecodeError: Unknown object encoding.
         """
+        if use_proxies is None:
+            use_proxies = self.use_proxies
+
         def readStatic(class_def, obj):
             for attr in class_def.static_properties:
                 obj[attr] = self.readElement()
@@ -1000,6 +1033,9 @@ class Decoder(pyamf.BaseDecoder):
             raise pyamf.DecodeError("Unknown object encoding")
 
         alias.applyAttributes(obj, obj_attrs, codec=self)
+
+        if use_proxies is True:
+            obj = self.readProxyObject(obj)
 
         return obj
 
@@ -1108,6 +1144,7 @@ class Encoder(pyamf.BaseEncoder):
     ]
 
     def __init__(self, *args, **kwargs):
+        self.use_proxies = kwargs.pop('use_proxies', use_proxies_default)
         self.string_references = kwargs.pop('string_references', True)
 
         pyamf.BaseEncoder.__init__(self, *args, **kwargs)
@@ -1321,6 +1358,7 @@ class Encoder(pyamf.BaseEncoder):
         @raise ValueError: Non C{int}/C{str} key value found in the C{dict}
         @raise EncodeError: C{dict} contains empty string keys.
         """
+
         # Design bug in AMF3 that cannot read/write empty key strings
         # http://www.docuverse.com/blog/donpark/2007/05/14/flash-9-amf3-bug
         # for more info

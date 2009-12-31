@@ -67,8 +67,7 @@ class ArrayCollection(list):
         self.extend(data)
 
     def __writeamf__(self, output):
-        output.encoder.writeList(
-            list(self), use_references=True, use_proxies=False)
+        output.encoder.writeList(list(self), use_proxies=False)
 
     def _get_length(self):
         return len(self)
