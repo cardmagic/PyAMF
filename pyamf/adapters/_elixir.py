@@ -36,10 +36,6 @@ class ElixirAdapter(adapter.SaMappedClassAlias):
         if self.descriptor.polymorphic:
             self.exclude_attrs.update([self.descriptor.polymorphic])
 
-        for prop in self.descriptor.relationships:
-            if hasattr(prop, 'foreign_key'):
-                self.exclude_attrs.update([col.name for col in prop.foreign_key])
-
     def _compile_base_class(self, klass):
         if klass is elixir.EntityBase or klass is elixir.Entity:
             return
