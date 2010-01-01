@@ -250,7 +250,7 @@ class ObjectProxy(object):
         self._amf_object = input.readObject()
 
     def __writeamf__(self, output):
-        output.writeObject(self._amf_object)
+        output.writeObject(self._amf_object, use_proxies=False)
 
 
 def unproxy_object(obj):
