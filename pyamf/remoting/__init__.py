@@ -47,7 +47,7 @@ STATUS_CODES = {
 }
 
 #: AMF mimetype.
-CONTENT_TYPE = 'application/x-amf'
+CONTENT_TYPE = 'application/x-amf; charset=utf-8'
 
 ERROR_CALL_FAILED, = range(1)
 ERROR_CODES = {
